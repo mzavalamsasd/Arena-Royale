@@ -142,6 +142,7 @@ const enemies = [];
 const vehicles = [];
 const chests = [];
 const enemyProjectiles = [];
+const playerProjectiles = [];
 const grenades = [];
 const tracers = [];
 const remotePlayers = new Map();
@@ -174,6 +175,10 @@ const state = {
   reserveAmmo: 0,
   reloadTimer: 0,
   shotCooldown: 0,
+  recoilPitch: 0,
+  recoilYaw: 0,
+  weaponKick: 0,
+  muzzleFlashTimer: 0,
   grenadeCount: 3,
   botCount: 12,
   matchMode: "battle",
@@ -195,6 +200,7 @@ const player = {
 };
 let playerNameSprite;
 let stormRing;
+let muzzleFlash;
 
 function worldPoint(x, z) {
   return new THREE.Vector3(x, terrainHeight(x, z), z);
@@ -631,6 +637,9 @@ function createPlayer() {
   player.weaponModel = makeGunModel("#424a42");
   player.weaponModel.position.set(0.3, -0.26, -0.58);
   camera.add(player.weaponModel);
+  muzzleFlash = new THREE.PointLight("#ffc981", 0, 3.2, 2);
+  muzzleFlash.position.set(0.3, -0.22, -1.42);
+  camera.add(muzzleFlash);
 
   playerNameSprite = createPlayerNameSprite(player.callsign);
   playerNameSprite.position.set(0, 2.8, 0);
@@ -784,34 +793,24 @@ function handleNetworkMessage(connection, packet) {
 }
 
 function resolveRemoteShot(packet) {
-  if (!Array.isArray(packet.origin) || !Array.isArray(packet.direction)) return;
   if (packet.team && packet.team === localTeam()) return;
-  const origin = new THREE.Vector3(...packet.origin);
-  const direction = new THREE.Vector3(...packet.direction).normalize();
-  raycaster.set(origin, direction);
-  raycaster.far = 75;
-  const targets = [
-    ...blockerMeshes,
-    ...enemies.filter((enemy) => enemy.alive).map((enemy) => enemy.body),
-  ];
-  const intersections = raycaster.intersectObjects(targets, true);
-  if (intersections.length > 0) {
-    const hit = intersections[0];
-    const bot = enemies.find((enemy) => enemy.alive && isDescendantOf(hit.object, enemy.body));
-    if (bot) {
-      bot.health -= Number(packet.damage) || 10;
-      if (bot.health <= 0) eliminateEnemy(bot, false);
-    }
-  }
-
-  const playerTarget = player.position.clone().add(new THREE.Vector3(0, 1.1, 0)).sub(origin);
-  const projectedDistance = playerTarget.dot(direction);
-  if (projectedDistance > 0 && projectedDistance < 75) {
-    const closestPoint = origin.clone().addScaledVector(direction, projectedDistance);
-    const blocked = intersections.length > 0 && intersections[0].distance < projectedDistance;
-    if (!blocked && closestPoint.distanceTo(player.position.clone().add(new THREE.Vector3(0, 1.1, 0))) < 0.55) {
-      damagePlayer(Number(packet.damage) || 10);
-    }
+  const shots = Array.isArray(packet.shots)
+    ? packet.shots
+    : packet.origin && packet.direction
+      ? [packet.direction]
+      : [];
+  for (const shot of shots) {
+    const originValues = Array.isArray(packet.origin) ? packet.origin : null;
+    if (!originValues || !Array.isArray(shot) || shot.length !== 3) continue;
+    spawnProjectile(
+      new THREE.Vector3(...originValues),
+      new THREE.Vector3(...shot),
+      Number(packet.damage) || 10,
+      packet.weaponType || "Assault Rifle",
+      packet.team || "remote",
+      "remote",
+      packet.peerId
+    );
   }
 }
 
