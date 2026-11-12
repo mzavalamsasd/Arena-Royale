@@ -1,649 +1,1360 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <meta
-    name="description"
-    content="Your personal music library. Add your songs, browse your collection, and listen."
-  />
-
-  <meta name="theme-color" content="#090b10" />
-
-  <title>Soundspace — Your Music</title>
-
-  <!-- Keep style.css in the same folder as this file. -->
-  <link rel="stylesheet" href="style.css" />
-</head>
-
-<body>
-  <main class="app">
-    <header>
-      <div class="brand">
-        soundspace<span>.</span>
-      </div>
-
-      <button class="primary-button" id="addSongs" type="button">
-        + Add songs
-      </button>
-    </header>
-
-    <section class="hero" aria-labelledby="heroTitle">
-      <div class="eyebrow">Your personal soundtrack</div>
-
-      <h1 id="heroTitle">
-        Good music.<br />
-        Your collection.
-      </h1>
-
-      <p>
-        Bring your favorite tracks together, find your next listen,
-        and press play.
-      </p>
-    </section>
-
-    <section aria-labelledby="libraryTitle">
-      <div class="library-header">
-        <div>
-          <h2 id="libraryTitle">Your library</h2>
-          <div class="muted" id="songCount">3 songs</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Battle royale survival game" />
+    <meta name="theme-color" content="#070b14" />
+    <title>Arena Royale</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="topbar">
+        <div class="brand" aria-label="Arena Royale">
+          <span class="brand-mark">A</span>
+          ARENA ROYALE
         </div>
 
-        <input
-          class="search"
-          id="search"
-          type="search"
-          placeholder="Search your songs..."
-          aria-label="Search your songs"
-          autocomplete="off"
-        />
-      </div>
-
-      <input
-        id="fileInput"
-        type="file"
-        accept="audio/*,video/mp4,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus,.aiff,.webm,.mp4"
-        multiple
-        hidden
-      />
-
-      <div
-        class="drop-zone"
-        id="dropZone"
-        role="button"
-        tabindex="0"
-        aria-label="Choose audio files or drop them here"
-      >
-        Drop audio files here, or click to browse
-      </div>
-
-      <div
-        class="track-list"
-        id="trackList"
-        aria-label="Songs"
-      ></div>
-
-      <div
-        id="status"
-        role="status"
-        aria-live="polite"
-      ></div>
-    </section>
-
-    <noscript>
-      <p>Please enable JavaScript to use the music library and player.</p>
-    </noscript>
-  </main>
-
-  <footer class="player" aria-label="Music player">
-    <div class="player-inner">
-
-      <!-- Currently selected song -->
-      <div class="now-playing">
-        <div class="art" aria-hidden="true">♫</div>
-
-        <div class="now-details">
-          <div class="now-title" id="nowTitle">God's Plan</div>
-          <div class="track-subtitle" id="nowArtist">Drake</div>
+        <div class="hud" aria-live="polite">
+          <div class="hud-pill">
+            <span class="hud-label">Alive</span>
+            <strong id="aliveCount">1</strong>
+          </div>
+          <div class="hud-pill">
+            <span class="hud-label">Kills</span>
+            <strong id="killsCount">0</strong>
+          </div>
+          <div class="hud-pill">
+            <span class="hud-label">Zone</span>
+            <strong id="zoneValue">100%</strong>
+          </div>
         </div>
+      </header>
+
+      <div class="battle-panel">
+        <section class="arena-panel">
+          <div id="arena" class="arena" aria-label="Battle arena" role="application">
+            <canvas id="gameCanvas" aria-label="3D battle arena. Click to play."></canvas>
+            <div id="mapLayer" class="map-layer" aria-hidden="true"></div>
+            <div id="vehicleLayer" class="vehicle-layer" aria-hidden="true"></div>
+            <div id="chestLayer" class="chest-layer"></div>
+            <div id="storm" class="storm"></div>
+            <div id="projectileLayer" class="projectile-layer"></div>
+            <div id="enemyLayer" class="enemy-layer"></div>
+            <div id="lootLayer" class="loot-layer"></div>
+            <div id="player" class="actor player avatar-scout" aria-label="Player"></div>
+            <div id="playerNameTag" class="player-name-tag">Rookie</div>
+            <div id="messageBanner" class="message-banner">Drop in</div>
+            <div class="minimap" aria-label="Tactical map">
+              <span class="minimap-title">TACTICAL MAP</span>
+              <canvas id="minimapCanvas" width="180" height="112" role="img" aria-label="Map showing terrain, buildings, vehicles, chests, and rival positions"></canvas>
+              <span class="minimap-legend">
+                <span><i class="legend-you"></i>You</span>
+                <span><i class="legend-rival"></i>Rivals</span>
+                <span><i class="legend-chest"></i>Chests</span>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <aside class="sidebar">
+          <div class="card">
+            <h2>Squad status</h2>
+            <div class="status-line">
+              <span>Health</span>
+              <strong id="healthValue">100</strong>
+            </div>
+            <div class="bar">
+              <span id="healthBar" class="bar-fill health-fill"></span>
+            </div>
+
+            <div class="status-line">
+              <span>Shield</span>
+              <strong id="shieldValue">35</strong>
+            </div>
+            <div class="bar">
+              <span id="shieldBar" class="bar-fill shield-fill"></span>
+            </div>
+
+            <div class="status-line">
+              <span>Weapon</span>
+              <strong id="weaponValue">Pulse Rifle</strong>
+            </div>
+            <select id="weaponSelect" class="weapon-select" aria-label="Select weapon"></select>
+          </div>
+
+          <div class="card avatar-editor">
+            <h2>Avatar</h2>
+            <div class="avatar-preview" aria-hidden="true">
+              <span id="avatarPreview" class="avatar-preview-mark avatar-scout"></span>
+            </div>
+            <label class="editor-field" for="avatarName">
+              Callsign
+              <input id="avatarName" class="editor-input" type="text" maxlength="16" value="Rookie" autocomplete="off" />
+            </label>
+            <label class="editor-field" for="avatarColor">
+              Suit color
+              <input id="avatarColor" class="editor-input color-input" type="color" value="#4de2a5" />
+            </label>
+            <label class="editor-field" for="avatarStyle">
+              Silhouette
+              <select id="avatarStyle" class="editor-input">
+                <option value="scout">Scout</option>
+                <option value="vanguard">Vanguard</option>
+                <option value="recon">Recon</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="card">
+            <h2>Objectives</h2>
+            <ul class="objective-list">
+              <li>Stay inside the safe zone.</li>
+              <li>Collect armor and medkits.</li>
+              <li>Eliminate every rival.</li>
+            </ul>
+          </div>
+
+          <div class="card controls-card">
+            <h2>Controls</h2>
+            <ul class="objective-list compact">
+              <li>Move: WASD</li>
+              <li>Look: Mouse · POV: V</li>
+              <li>Drive: W/S accelerate, A/D steer</li>
+              <li>Jump: Space Bar</li>
+              <li>Shoot: Click · Aim: Right-click</li>
+              <li>Reload: R</li>
+              <li>Aim: Double Click</li>
+              <li>Grenade: G</li>
+              <li>Open chest: Enter nearby</li>
+              <li>Switch weapon: Q / E or select above</li>
+              <li>Enter / exit vehicle: F</li>
+            </ul>
+            <button id="restartButton" class="restart-button" type="button">New Match</button>
+          </div>
+        </aside>
       </div>
+    </main>
 
-      <!-- Playback controls and progress -->
-      <div>
-        <div class="controls">
-          <button
-            class="control-button"
-            id="previous"
-            type="button"
-            aria-label="Previous song"
-            title="Previous song"
-          >
-            ⏮
-          </button>
+    <script type="text/plain" id="legacyGameCode">
+      const arena = document.getElementById("arena");
+      const mapLayer = document.getElementById("mapLayer");
+      const vehicleLayer = document.getElementById("vehicleLayer");
+      const chestLayer = document.getElementById("chestLayer");
+      const minimapContext = document.getElementById("minimapCanvas").getContext("2d");
+      const storm = document.getElementById("storm");
+      const messageBanner = document.getElementById("messageBanner");
+      const enemyLayer = document.getElementById("enemyLayer");
+      const projectileLayer = document.getElementById("projectileLayer");
+      const lootLayer = document.getElementById("lootLayer");
 
-          <button
-            class="control-button play-button"
-            id="playPause"
-            type="button"
-            aria-label="Play"
-            title="Play"
-          >
-            ▶
-          </button>
+      const aliveCountEl = document.getElementById("aliveCount");
+      const killsCountEl = document.getElementById("killsCount");
+      const zoneValueEl = document.getElementById("zoneValue");
+      const healthValueEl = document.getElementById("healthValue");
+      const shieldValueEl = document.getElementById("shieldValue");
+      const weaponValueEl = document.getElementById("weaponValue");
+      const weaponSelectEl = document.getElementById("weaponSelect");
+      const healthBar = document.getElementById("healthBar");
+      const shieldBar = document.getElementById("shieldBar");
+      const restartButton = document.getElementById("restartButton");
+      const avatarNameInput = document.getElementById("avatarName");
+      const avatarColorInput = document.getElementById("avatarColor");
+      const avatarStyleSelect = document.getElementById("avatarStyle");
+      const avatarPreview = document.getElementById("avatarPreview");
+      const playerNameTag = document.getElementById("playerNameTag");
 
-          <button
-            class="control-button"
-            id="next"
-            type="button"
-            aria-label="Next song"
-            title="Next song"
-          >
-            ⏭
-          </button>
+      const weaponCatalog = [
+        { name: "M4 Carbine", type: "Assault Rifle", description: "Versatile, mid-to-long-range automatic rifle.", magSize: 20, ammo: 20, reserveAmmo: 60, maxReserveAmmo: 60, damage: 22, fireCooldown: 0.13, bulletSpeed: 550, bulletsPerShot: 1, color: "#ffd26d" },
+        { name: "AK-47", type: "Assault Rifle", description: "Hard-hitting assault rifle with a slower firing rate.", magSize: 18, ammo: 18, reserveAmmo: 54, maxReserveAmmo: 54, damage: 30, fireCooldown: 0.2, bulletSpeed: 490, bulletsPerShot: 1, color: "#ff9b45" },
+        { name: "MP5", type: "Submachine Gun", description: "Fast-firing weapon best suited to close range.", magSize: 24, ammo: 24, reserveAmmo: 72, maxReserveAmmo: 72, damage: 14, fireCooldown: 0.08, bulletSpeed: 520, bulletsPerShot: 1, color: "#8cf8b7" },
+        { name: "Pump-Action Shotgun", type: "Shotgun", description: "Fires a wide spread of pellets at close range.", magSize: 5, ammo: 5, reserveAmmo: 25, maxReserveAmmo: 25, damage: 10, fireCooldown: 0.48, bulletSpeed: 430, bulletsPerShot: 6, color: "#ff8b67" },
+        { name: "M24 Sniper Rifle", type: "Sniper Rifle", description: "Powerful, slower-firing rifle for long-range shots.", magSize: 5, ammo: 5, reserveAmmo: 20, maxReserveAmmo: 20, damage: 72, fireCooldown: 0.65, bulletSpeed: 760, bulletsPerShot: 1, color: "#7ed8ff" },
+        { name: "Glock 17", type: "Pistol", description: "Quick, lightweight sidearm with a steady firing rate.", magSize: 15, ammo: 15, reserveAmmo: 60, maxReserveAmmo: 60, damage: 16, fireCooldown: 0.2, bulletSpeed: 500, bulletsPerShot: 1, color: "#e5e9f2" },
+        { name: "Desert Eagle", type: "Heavy Pistol", description: "Hard-hitting sidearm with a slower firing rate.", magSize: 7, ammo: 7, reserveAmmo: 28, maxReserveAmmo: 28, damage: 42, fireCooldown: 0.42, bulletSpeed: 590, bulletsPerShot: 1, color: "#ffd26d" },
+        { name: "SCAR-H", type: "Battle Rifle", description: "Powerful, accurate rifle with a measured firing rate.", magSize: 16, ammo: 16, reserveAmmo: 48, maxReserveAmmo: 48, damage: 32, fireCooldown: 0.24, bulletSpeed: 640, bulletsPerShot: 1, color: "#c5a6ff" },
+        { name: "M249", type: "Light Machine Gun", description: "Large magazine and rapid fire, with a slower reload.", magSize: 40, ammo: 40, reserveAmmo: 80, maxReserveAmmo: 80, damage: 12, fireCooldown: 0.09, reloadTime: 1.8, bulletSpeed: 510, bulletsPerShot: 1, color: "#ffcf70" },
+      ];
 
-          <button
-            class="control-button"
-            id="loopButton"
-            type="button"
-            aria-label="Loop mode: Off"
-            title="Loop: Off (Click to toggle)"
-          >
-            🔁
-          </button>
-        </div>
+      const weaponModelsByType = {
+        "Assault Rifle": [
+          "AR-15", "M16A1", "M16A2", "M16A3", "M16A4", "M4A1", "Colt CAR-15",
+          "HK416", "HK416A5", "HK433", "G36", "G36K", "G36C", "SIG SG 550",
+          "SIG SG 551", "SIG SG 552", "SIG SG 553", "FN FNC", "FN F2000",
+          "FN SCAR-L", "IWI Galil ARM", "Galil ACE 21", "Galil ACE 22",
+          "Galil ACE 23", "TAR-21", "X95", "FAMAS F1", "FAMAS G2",
+          "Steyr AUG A1", "Steyr AUG A3", "QBZ-95", "QBZ-191", "Type 56",
+          "Type 81", "AKM", "AK-74", "AK-74M", "AK-12", "AK-103", "AK-104",
+          "AK-105", "AK-200", "AK-203", "AK-308", "Vz. 58", "CZ 805 BREN",
+          "CZ BREN 2", "Beretta ARX160", "Daewoo K2", "Howa Type 89",
+          "SIG MCX", "SIG MCX Virtus", "SIG MCX Spear", "T91", "T65",
+          "AK-101", "AN-94", "AS Val", "9A-91", "OTs-14 Groza", "AEK-971",
+          "AK-9", "Type 95", "Grot", "Beretta AR70/90", "IWI Carmel",
+        ],
+        "Submachine Gun": [
+          "MP5K", "MP5SD", "MP7", "UMP45", "UMP9", "B&T MP9", "SIG MPX",
+          "FN P90", "FN P90 TR", "Uzi", "Mini Uzi", "Micro Uzi",
+          "PP-19 Bizon", "PP-19-01 Vityaz", "PP-2000", "SR-2 Veresk",
+          "Scorpion vz. 61", "CZ Scorpion EVO 3", "B&T APC9", "B&T APC45",
+          "Sterling L2A3", "Sten Mk II", "MAC-10", "MAC-11", "Thompson M1A1",
+          "M3 Grease Gun", "Owen Gun", "MAT-49", "Beretta PM12",
+          "Beretta M12S", "FAMAE SAF", "Suomi KP/-31", "PPS-43", "PPSh-41",
+          "Daewoo K7", "K1A", "OTs-02 Kiparis", "SIG MP 310", "Steyr TMP",
+          "MP 18", "MP 40", "PM-63 RAK", "Pistolet mitrailleur MAS-38",
+        ],
+        "Pistol": [
+          "Beretta 92FS", "M9", "M1911A1", "Colt Python", "Smith & Wesson Model 29",
+          "Smith & Wesson M&P9", "Glock 19", "Glock 26", "Glock 34", "Glock 18",
+          "SIG Sauer P226", "SIG Sauer P320", "SIG Sauer P365", "SIG Sauer P229",
+          "CZ 75", "CZ P-10 C", "CZ Shadow 2", "FN Five-seveN", "FN 509",
+          "Browning Hi-Power", "Walther PPK", "Walther P99", "Walther PDP",
+          "HK USP", "HK P30", "HK VP9", "Ruger GP100", "Ruger LCP",
+          "Springfield XD-M", "Springfield Hellcat", "Taurus 92",
+          "Taurus Model 605", "Makarov PM", "Tokarev TT-33", "Stechkin APS",
+          "Beretta APX", "Beretta PX4 Storm", "Browning Buck Mark",
+          "Ruger Mark IV", "Smith & Wesson 500", "Smith & Wesson 686",
+          "Colt Anaconda", "Ruger Blackhawk", "FN Model 1900", "HK Mk 23",
+        ],
+        "Shotgun": [
+          "Remington 870", "Remington 1100", "Remington 11-87", "Mossberg 500",
+          "Mossberg 590A1", "Mossberg 590M", "Benelli M3", "Benelli M4",
+          "Benelli M2", "Benelli SuperNova", "Benelli Nova", "Beretta 1301",
+          "Beretta 686", "SPAS-12", "SPAS-15", "Saiga-12", "Vepr-12", "KS-23",
+          "Ithaca 37", "Winchester Model 1897", "Winchester 1300",
+          "Winchester Model 12", "Browning Auto-5", "Browning BPS",
+          "Kel-Tec KSG", "Standard Manufacturing DP-12", "SRM 1216",
+          "Winchester SXP", "Remington 11-48", "Stoeger M3000",
+          "Franchi SPAS-12", "Mossberg Maverick 88",
+        ],
+        "Sniper Rifle": [
+          "M40A5", "M40A6", "M2010 Enhanced Sniper Rifle", "M110 SASS",
+          "Mk 12 SPR", "Mk 13", "M40", "M21", "Remington 700",
+          "Savage 110", "Barrett M82", "Barrett M107", "Barrett MRAD",
+          "CheyTac M200", "Accuracy International AWM", "Accuracy International AXMC",
+          "Arctic Warfare", "Sako TRG-22", "Sako TRG-42", "Dragunov SVD",
+          "SV-98", "VSS Vintorez", "PSL", "Mosin-Nagant 91/30", "Karabiner 98k",
+          "Lee-Enfield No. 4", "Springfield M1903", "Winchester Model 70",
+          "Ruger Precision Rifle", "Tikka T3x TAC A1", "FN SPR", "Steyr SSG 69",
+          "Steyr SSG 08", "Blaser R93 Tactical", "QBU-88", "Type 79 Sniper Rifle",
+          "QBU-191", "L96A1", "L115A3", "McMillan TAC-50", "Barrett M95",
+          "Barrett M99", "CZ 700", "Sako TRG M10", "Desert Tech SRS",
+        ],
+        "Light Machine Gun": [
+          "M240B", "M240L", "M60E4", "M60", "M2 Browning", "Mk 48",
+          "Mk 46", "FN Minimi", "FN MAG", "FN EVOLYS", "PKM",
+          "PKP Pecheneg", "RPD", "RPK", "RPK-74", "RPK-16", "IWI Negev",
+          "Ultimax 100", "Stoner 63", "MG3", "MG42", "HK MG4", "HK MG5",
+          "HK21", "CETME Ameli", "KAC LAMG", "DShK", "Type 88 LMG", "QJB-95",
+          "M1918 BAR", "Bren Gun", "Lewis Gun", "DP-27", "Vz. 59", "HK23E",
+          "Madsen machine gun", "FN Minimi Para", "M27 IAR", "Kord 6P50",
+        ],
+        "Battle Rifle": [
+          "FN FAL", "L1A1 SLR", "HK G3", "HK417", "SIG SG 510",
+          "SIG 716", "AR-10", "M14", "CETME Model C", "Galil ACE 52",
+          "Galil ACE 53", "Beretta BM 59", "Springfield M1A", "Tavor 7",
+          "FAL OSW", "SIG SG 542", "G3A3", "MAS-49", "AG-3", "FAL Para",
+          "HK G41", "PTR-91", "SA80 L1A1", "FN SCAR 17S", "CETME Model B",
+          "SIG SG 510-4", "Robinson XCR-M", "LMT MARS-H", "KAC SR-25",
+          "MKE MPT-76", "Beretta ARX 200",
+        ],
+        "Carbine": [
+          "M1 Carbine", "M1A1 Carbine", "Colt XM177", "Colt Commando",
+          "Ruger Mini-14", "Ruger Mini Thirty", "Kel-Tec SU-16",
+          "AKS-74U", "Vz. 58 Compact", "CZ 805 BREN S1",
+          "IWI Galil ACE 31", "IWI Galil ACE 32", "SIG SG 553 LB",
+          "HK G36K", "HK G36C", "Bushmaster ACR", "Beretta Cx4 Storm",
+          "Kel-Tec SUB-2000", "Ruger PC Carbine", "Henry Homesteader",
+          "M4 Commando", "SIG MCX Rattler", "CMMG Banshee", "B&T APC300",
+          "FN SCAR 16S", "Tavor X95 SBR", "Howa Type 89-F",
+        ],
+        "Designated Marksman Rifle": [
+          "Mk 14 EBR", "M110A1 SDMR", "M38 DMR", "HK G28", "HK PSG1",
+          "HK MSG90", "FN SCAR 20S", "FNAR", "SIG SG 550 Sniper",
+          "Galil Sniper", "SVDK", "VSSK Vykhlop", "QBU-88 DMR",
+          "Zastava M76", "Zastava M91", "M77B1", "Tabuk Sniper Rifle",
+          "IWI Tavor 7 DMR", "M1C Garand", "M1D Garand", "L129A1",
+          "LMT LM8MWS", "LaRue OBR", "Knight's SR-25 E2",
+        ],
+      };
 
-        <div class="timeline">
-          <span id="currentTime">0:00</span>
+      const weaponProfiles = {
+        "Assault Rifle": { magSize: 30, reserveAmmo: 90, damage: 23, fireCooldown: 0.14, bulletSpeed: 550, bulletsPerShot: 1, color: "#8cf8b7" },
+        "Submachine Gun": { magSize: 30, reserveAmmo: 90, damage: 13, fireCooldown: 0.075, bulletSpeed: 510, bulletsPerShot: 1, color: "#8cf8b7" },
+        "Pistol": { magSize: 15, reserveAmmo: 60, damage: 16, fireCooldown: 0.19, bulletSpeed: 500, bulletsPerShot: 1, color: "#e5e9f2" },
+        "Shotgun": { magSize: 6, reserveAmmo: 24, damage: 9, fireCooldown: 0.45, bulletSpeed: 430, bulletsPerShot: 6, color: "#ff8b67" },
+        "Sniper Rifle": { magSize: 5, reserveAmmo: 20, damage: 66, fireCooldown: 0.58, bulletSpeed: 760, bulletsPerShot: 1, color: "#7ed8ff" },
+        "Light Machine Gun": { magSize: 40, reserveAmmo: 80, damage: 12, fireCooldown: 0.09, reloadTime: 1.8, bulletSpeed: 510, bulletsPerShot: 1, color: "#ffcf70" },
+        "Battle Rifle": { magSize: 20, reserveAmmo: 60, damage: 30, fireCooldown: 0.2, bulletSpeed: 620, bulletsPerShot: 1, color: "#c5a6ff" },
+        "Carbine": { magSize: 25, reserveAmmo: 75, damage: 20, fireCooldown: 0.13, bulletSpeed: 540, bulletsPerShot: 1, color: "#ffd26d" },
+        "Designated Marksman Rifle": { magSize: 10, reserveAmmo: 40, damage: 42, fireCooldown: 0.32, bulletSpeed: 700, bulletsPerShot: 1, color: "#7ed8ff" },
+      };
 
-          <input
-            id="seek"
-            type="range"
-            min="0"
-            max="100"
-            step="0.1"
-            value="0"
-            aria-label="Song position"
-          />
-
-          <span id="duration">0:00</span>
-        </div>
-      </div>
-
-      <!-- Volume -->
-      <div class="volume">
-        <span aria-hidden="true">♫</span>
-
-        <input
-          id="volume"
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value="0.8"
-          aria-label="Volume"
-        />
-      </div>
-
-    </div>
-  </footer>
-
-  <audio id="audio" preload="metadata"></audio>
-
-  <script>
-    const starterSongs = [
-      {
-        title: "God's Plan",
-        artist: "Drake",
-        src: "Drake-God-s-Plan-Clean-Lyrics.mp4"
-      },
-      {
-        title: "Babydoll",
-        artist: "Dominic Fike",
-        src: "Dominic-Fike-Babydoll-Lyrics.mp4"
-      },
-      {
-        title: "FE!N",
-        artist: "Travis Scott",
-        src: "Travis Scott - FE!N (Lyrics).mp4"
-      }
-    ];
-
-    const $ = (id) => document.getElementById(id);
-
-    const audio = $("audio");
-    const fileInput = $("fileInput");
-    const trackList = $("trackList");
-    const dropZone = $("dropZone");
-    const search = $("search");
-    const seek = $("seek");
-    const loopBtn = $("loopButton");
-
-    let songs = starterSongs.map((song, index) => ({
-      ...song,
-      id: `starter-${index}`,
-      local: false
-    }));
-
-    let currentId = songs[0]?.id || null;
-    let nextId = 0;
-    let dragDepth = 0;
-
-    // Loop modes: "off" | "all" | "one"
-    let loopMode = "off";
-
-    audio.volume = Number($("volume").value);
-    if (songs[0]) {
-      audio.src = songs[0].src;
-    }
-
-    function formatTime(seconds) {
-      if (!Number.isFinite(seconds) || seconds < 0) {
-        return "0:00";
-      }
-
-      const minutes = Math.floor(seconds / 60);
-      const remainingSeconds = Math.floor(seconds % 60);
-
-      return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
-    }
-
-    function getCurrentIndex() {
-      return songs.findIndex((song) => song.id === currentId);
-    }
-
-    function setStatus(message) {
-      $("status").textContent = message;
-    }
-
-    function updateLoopUI() {
-      if (loopMode === "off") {
-        loopBtn.textContent = "🔁";
-        loopBtn.classList.remove("selected");
-        loopBtn.setAttribute("aria-label", "Loop mode: Off");
-        loopBtn.title = "Loop: Off (Click for Loop All)";
-      } else if (loopMode === "all") {
-        loopBtn.textContent = "🔁";
-        loopBtn.classList.add("selected");
-        loopBtn.setAttribute("aria-label", "Loop mode: All");
-        loopBtn.title = "Loop: All (Click for Loop One)";
-      } else if (loopMode === "one") {
-        loopBtn.textContent = "🔂";
-        loopBtn.classList.add("selected");
-        loopBtn.setAttribute("aria-label", "Loop mode: One");
-        loopBtn.title = "Loop: Current Song (Click to Turn Off)";
-      }
-    }
-
-    function updateControls() {
-      const hasSongs = songs.length > 0;
-      const playing = currentId !== null && !audio.paused;
-
-      $("playPause").disabled = !hasSongs;
-      $("previous").disabled = !hasSongs;
-      $("next").disabled = !hasSongs;
-
-      $("playPause").textContent = playing ? "❚❚" : "▶";
-      $("playPause").setAttribute("aria-label", playing ? "Pause" : "Play");
-      $("playPause").title = playing ? "Pause" : "Play";
-
-      document.querySelectorAll(".track").forEach((row) => {
-        const active = row.dataset.songId === currentId;
-        const rowPlaying = active && !audio.paused;
-        const button = row.querySelector(".track-play");
-        const song = songs.find((item) => item.id === row.dataset.songId);
-
-        row.classList.toggle("active", active);
-        button.textContent = rowPlaying ? "❚❚" : "▶";
-
-        if (song) {
-          button.setAttribute(
-            "aria-label",
-            `${rowPlaying ? "Pause" : "Play"} ${song.title}`
-          );
-        }
-      });
-    }
-
-    function renderLibrary() {
-      const query = search.value.trim().toLowerCase();
-
-      const visibleSongs = songs.filter((song) =>
-        `${song.title} ${song.artist || ""}`
-          .toLowerCase()
-          .includes(query)
-      );
-
-      $("songCount").textContent =
-        `${songs.length} song${songs.length === 1 ? "" : "s"}`;
-
-      trackList.replaceChildren();
-
-      if (visibleSongs.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "empty";
-        empty.textContent = songs.length
-          ? "No songs match your search."
-          : "Your library is waiting. Add some songs to get started.";
-        trackList.append(empty);
-      }
-
-      for (const song of visibleSongs) {
-        const row = document.createElement("div");
-        row.className = "track";
-        row.dataset.songId = song.id;
-
-        const playButton = document.createElement("button");
-        playButton.className = "track-play";
-        playButton.type = "button";
-
-        playButton.addEventListener("click", () => {
-          if (song.id === currentId) {
-            togglePlayback();
-          } else {
-            playSong(song.id);
+      const weaponModelGroups = Object.entries(weaponModelsByType);
+      const additionalWeaponModels = [];
+      for (let modelIndex = 0; ; modelIndex += 1) {
+        let foundModel = false;
+        for (const [type, names] of weaponModelGroups) {
+          if (names[modelIndex]) {
+            additionalWeaponModels.push({ name: names[modelIndex], type });
+            foundModel = true;
           }
-        });
-
-        const details = document.createElement("div");
-        details.className = "track-details";
-
-        const title = document.createElement("div");
-        title.className = "track-title";
-        title.textContent = song.title;
-
-        const subtitle = document.createElement("div");
-        subtitle.className = "track-subtitle";
-        subtitle.textContent = song.artist || "Unknown artist";
-
-        details.append(title, subtitle);
-
-        const removeButton = document.createElement("button");
-        removeButton.className = "remove-button";
-        removeButton.type = "button";
-        removeButton.textContent = "✕";
-        removeButton.setAttribute("aria-label", `Remove ${song.title}`);
-
-        removeButton.addEventListener("click", () => {
-          removeSong(song.id);
-        });
-
-        row.append(playButton, details, removeButton);
-        trackList.append(row);
+        }
+        if (!foundModel) break;
       }
 
-      updateControls();
-    }
+      const knownWeaponNames = new Set(weaponCatalog.map((weapon) => weapon.name.toLowerCase()));
+      let generatedWeaponIndex = 0;
 
-    async function startPlayback() {
-      const requestedId = currentId;
+      for (const model of additionalWeaponModels) {
+        if (weaponCatalog.length >= 200) break;
 
-      try {
-        await audio.play();
+        const normalizedName = model.name.toLowerCase();
+        if (knownWeaponNames.has(normalizedName)) continue;
 
-        if (currentId === requestedId) {
-          setStatus("");
+        const profile = weaponProfiles[model.type];
+        const variation = generatedWeaponIndex++;
+        const magSize = Math.max(4, profile.magSize + (variation % 3) - 1);
+        const weapon = {
+          ...profile,
+          name: model.name,
+          type: model.type,
+          description: `${model.type} with distinct arcade handling.`,
+          magSize,
+          ammo: magSize,
+          reserveAmmo: profile.reserveAmmo + (variation % 4) * 5,
+          maxReserveAmmo: profile.reserveAmmo + (variation % 4) * 5,
+          damage: Math.max(8, profile.damage + (variation % 5) * 2 - 4),
+          fireCooldown: Math.max(0.06, profile.fireCooldown + ((variation % 3) - 1) * 0.02),
+          bulletSpeed: profile.bulletSpeed + ((variation % 4) - 1) * 15,
+        };
+
+        weaponCatalog.push(weapon);
+        knownWeaponNames.add(normalizedName);
+      }
+
+      weaponCatalog.forEach((weapon, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = `${index + 1}. ${weapon.name} — ${weapon.type}`;
+        weaponSelectEl.append(option);
+      });
+
+      const state = {
+        arenaWidth: 900,
+        arenaHeight: 560,
+        centerX: 450,
+        centerY: 280,
+        zoneRadius: 260,
+        startZoneRadius: 260,
+        minZoneRadius: 80,
+        shrinkRate: 6.5,
+        time: 0,
+        kills: 0,
+        lastTime: 0,
+        running: true,
+        keys: Object.create(null),
+        mouse: {
+          x: 450,
+          y: 280,
+          down: false,
+        },
+        player: {
+          x: 450,
+          y: 280,
+          radius: 18,
+          speed: 220,
+          health: 100,
+          armor: 35,
+          facing: 0,
+          fireCooldown: 0,
+          ammo: weaponCatalog[0].ammo,
+          reserveAmmo: weaponCatalog[0].reserveAmmo,
+          reloadTimer: 0,
+          grenades: 3,
+          jumpTimer: 0,
+          aimAssist: 0,
+          weaponIndex: 0,
+          vehicle: null,
+          name: "Rookie",
+          color: "#4de2a5",
+          silhouette: "scout",
+          el: document.getElementById("player"),
+        },
+        bullets: [],
+        enemies: [],
+        loot: [],
+        obstacles: [],
+        vehicles: [],
+        chests: [],
+      };
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      const mapFeatures = [
+        { x: 74, y: 82, width: 142, height: 82, type: "building", label: "FUEL DEPOT" },
+        { x: 670, y: 82, width: 146, height: 92, type: "building", label: "RADAR BASE" },
+        { x: 66, y: 396, width: 148, height: 88, type: "building", label: "OLD QUARRY" },
+        { x: 680, y: 390, width: 144, height: 94, type: "building", label: "GREENHOUSE" },
+        { x: 380, y: 76, width: 118, height: 64, type: "building", label: "LOOKOUT" },
+        { x: 300, y: 222, width: 72, height: 30, type: "container" },
+        { x: 520, y: 310, width: 78, height: 30, type: "container" },
+        { x: 294, y: 404, width: 62, height: 48, type: "rock" },
+        { x: 544, y: 104, width: 58, height: 45, type: "rock" },
+        { x: 236, y: 286, width: 42, height: 40, type: "rock" },
+        { x: 638, y: 274, width: 48, height: 42, type: "rock" },
+        { x: 390, y: 448, width: 48, height: 40, type: "rock" },
+        { x: 486, y: 180, width: 36, height: 44, type: "tree" },
+        { x: 148, y: 250, width: 36, height: 44, type: "tree" },
+        { x: 756, y: 246, width: 36, height: 44, type: "tree" },
+      ];
+      const vehicleStarts = [
+        { x: 450, y: 190, angle: -Math.PI / 2, color: "red" },
+        { x: 490, y: 346, angle: Math.PI / 2, color: "blue" },
+        { x: 612, y: 278, angle: 0, color: "yellow" },
+      ];
+      const chestStarts = [
+        { x: 258, y: 172 },
+        { x: 586, y: 188 },
+        { x: 286, y: 352 },
+        { x: 616, y: 352 },
+        { x: 454, y: 492 },
+        { x: 818, y: 306 },
+      ];
+
+      function buildMap() {
+        const roads = [
+          { className: "map-road north-south" },
+          { className: "map-road east-west" },
+          { className: "map-water" },
+        ];
+
+        for (const road of roads) {
+          const element = document.createElement("div");
+          element.className = road.className;
+          mapLayer.append(element);
         }
-      } catch (error) {
-        if (error.name === "AbortError" || currentId !== requestedId) {
+
+        state.obstacles = mapFeatures;
+        for (const feature of mapFeatures) {
+          const element = document.createElement("div");
+          element.className = `map-feature map-${feature.type}`;
+          element.style.left = `${feature.x}px`;
+          element.style.top = `${feature.y}px`;
+          element.style.width = `${feature.width}px`;
+          element.style.height = `${feature.height}px`;
+
+          if (feature.label) {
+            const label = document.createElement("span");
+            label.className = "map-feature-label";
+            label.textContent = feature.label;
+            element.append(label);
+          }
+
+          mapLayer.append(element);
+        }
+
+        state.vehicles = vehicleStarts.map((start) => {
+          const element = document.createElement("div");
+          element.className = `vehicle vehicle-${start.color}`;
+          element.setAttribute("aria-label", `${start.color} drivable vehicle`);
+          element.title = "Press F nearby to drive";
+          vehicleLayer.append(element);
+          return {
+            x: start.x,
+            y: start.y,
+            startX: start.x,
+            startY: start.y,
+            angle: start.angle,
+            startAngle: start.angle,
+            radius: 21,
+            speed: 270,
+            color: start.color,
+            el: element,
+          };
+        });
+        state.vehicles.forEach(renderVehicle);
+
+        state.chests = chestStarts.map((start, index) => {
+          const element = document.createElement("div");
+          element.className = "chest";
+          element.setAttribute("role", "img");
+          element.setAttribute("aria-label", `Loot chest ${index + 1}, press Enter nearby to open`);
+          element.title = "Press Enter nearby to open";
+          element.style.left = `${start.x}px`;
+          element.style.top = `${start.y}px`;
+          chestLayer.append(element);
+          return {
+            x: start.x,
+            y: start.y,
+            index,
+            opened: false,
+            el: element,
+          };
+        });
+      }
+
+      function isBlocked(x, y, radius, ignoredVehicle = null) {
+        const blockedByTerrain = state.obstacles.some((obstacle) => {
+          const closestX = clamp(x, obstacle.x, obstacle.x + obstacle.width);
+          const closestY = clamp(y, obstacle.y, obstacle.y + obstacle.height);
+          return Math.hypot(x - closestX, y - closestY) < radius;
+        });
+        if (blockedByTerrain) return true;
+
+        return state.vehicles.some((vehicle) =>
+          vehicle !== ignoredVehicle &&
+          Math.hypot(x - vehicle.x, y - vehicle.y) < radius + vehicle.radius
+        );
+      }
+
+      function moveEntity(entity, deltaX, deltaY, ignoredVehicle = null) {
+        const nextX = clamp(entity.x + deltaX, entity.radius, state.arenaWidth - entity.radius);
+        if (!isBlocked(nextX, entity.y, entity.radius, ignoredVehicle)) {
+          entity.x = nextX;
+        }
+
+        const nextY = clamp(entity.y + deltaY, entity.radius, state.arenaHeight - entity.radius);
+        if (!isBlocked(entity.x, nextY, entity.radius, ignoredVehicle)) {
+          entity.y = nextY;
+        }
+      }
+
+      function renderVehicle(vehicle) {
+        vehicle.el.style.left = `${vehicle.x}px`;
+        vehicle.el.style.top = `${vehicle.y}px`;
+        vehicle.el.style.transform = `translate(-50%, -50%) rotate(${vehicle.angle}rad)`;
+      }
+
+      function renderMinimap() {
+        const context = minimapContext;
+        const scaleX = 180 / state.arenaWidth;
+        const scaleY = 112 / state.arenaHeight;
+
+        context.clearRect(0, 0, 180, 112);
+        context.save();
+        context.scale(scaleX, scaleY);
+        context.fillStyle = "#294236";
+        context.fillRect(0, 0, state.arenaWidth, state.arenaHeight);
+
+        context.fillStyle = "#897f63";
+        context.fillRect(416, -20, 66, 600);
+        context.fillRect(-20, 260, 940, 54);
+        context.beginPath();
+        context.ellipse(275, 175, 390, 14, Math.PI / 10, 0, Math.PI * 2);
+        context.strokeStyle = "#43848b";
+        context.lineWidth = 12;
+        context.stroke();
+
+        for (const feature of mapFeatures) {
+          if (feature.type === "building") {
+            context.fillStyle = "#78806c";
+            context.strokeStyle = "#c0c5a5";
+            context.lineWidth = 4;
+            context.fillRect(feature.x, feature.y, feature.width, feature.height);
+            context.strokeRect(feature.x, feature.y, feature.width, feature.height);
+          } else if (feature.type === "container") {
+            context.fillStyle = "#8b9867";
+            context.fillRect(feature.x, feature.y, feature.width, feature.height);
+          } else {
+            context.beginPath();
+            context.ellipse(
+              feature.x + feature.width / 2,
+              feature.y + feature.height / 2,
+              feature.width / 2,
+              feature.height / 2,
+              0,
+              0,
+              Math.PI * 2
+            );
+            context.fillStyle = feature.type === "tree" ? "#648351" : "#89917a";
+            context.fill();
+          }
+        }
+
+        for (const chest of state.chests) {
+          context.fillStyle = chest.opened ? "#847952" : "#ffd26d";
+          context.fillRect(chest.x - 9, chest.y - 6, 18, 12);
+        }
+
+        for (const vehicle of state.vehicles) {
+          context.save();
+          context.translate(vehicle.x, vehicle.y);
+          context.rotate(vehicle.angle);
+          context.fillStyle = vehicle.color === "red" ? "#ff7d69" : vehicle.color === "blue" ? "#75c9f5" : "#f4d367";
+          context.fillRect(-13, -7, 26, 14);
+          context.restore();
+        }
+
+        for (const enemy of state.enemies) {
+          context.beginPath();
+          context.arc(enemy.x, enemy.y, 11, 0, Math.PI * 2);
+          context.fillStyle = "#ff6378";
+          context.fill();
+        }
+
+        context.beginPath();
+        context.arc(state.player.x, state.player.y, 13, 0, Math.PI * 2);
+        context.fillStyle = "#8cf8b7";
+        context.fill();
+        context.strokeStyle = "#f4fff8";
+        context.lineWidth = 4;
+        context.stroke();
+
+        context.beginPath();
+        context.arc(state.centerX, state.centerY, state.zoneRadius, 0, Math.PI * 2);
+        context.strokeStyle = "rgba(140, 248, 183, 0.8)";
+        context.lineWidth = 5;
+        context.stroke();
+        context.restore();
+      }
+
+      function randomRange(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      function applyAvatarSettings() {
+        const name = avatarNameInput.value.trim().slice(0, 16);
+        const silhouette = ["scout", "vanguard", "recon"].includes(avatarStyleSelect.value)
+          ? avatarStyleSelect.value
+          : "scout";
+
+        state.player.name = name || "Rookie";
+        state.player.color = avatarColorInput.value;
+        state.player.silhouette = silhouette;
+        playerNameTag.textContent = state.player.name;
+        state.player.el.setAttribute("aria-label", state.player.name);
+        state.player.el.style.setProperty("--avatar-color", state.player.color);
+        avatarPreview.style.setProperty("--avatar-color", state.player.color);
+
+        for (const style of ["scout", "vanguard", "recon"]) {
+          state.player.el.classList.remove(`avatar-${style}`);
+          avatarPreview.classList.remove(`avatar-${style}`);
+        }
+
+        state.player.el.classList.add(`avatar-${silhouette}`);
+        avatarPreview.classList.add(`avatar-${silhouette}`);
+      }
+
+      function setMessage(message, timeout = 2) {
+        messageBanner.textContent = message;
+        messageBanner.dataset.timer = String(timeout);
+      }
+
+      function getCurrentWeapon() {
+        return weaponCatalog[state.player.weaponIndex] || weaponCatalog[0];
+      }
+
+      function updateHud() {
+        const zonePercent = Math.max(
+          0,
+          Math.round((state.zoneRadius / state.startZoneRadius) * 100)
+        );
+        const currentWeapon = getCurrentWeapon();
+
+        aliveCountEl.textContent = String(state.enemies.length + 1);
+        killsCountEl.textContent = String(state.kills);
+        zoneValueEl.textContent = `${zonePercent}%`;
+        healthValueEl.textContent = String(Math.max(0, Math.round(state.player.health)));
+        shieldValueEl.textContent = String(Math.max(0, Math.round(state.player.armor)));
+        weaponValueEl.textContent = `${state.player.reloadTimer > 0 ? "Reloading" : currentWeapon.name} • ${Math.max(0, state.player.ammo)}/${state.player.reserveAmmo}`;
+        weaponValueEl.title = `${currentWeapon.type}: ${currentWeapon.description}`;
+        weaponSelectEl.value = String(state.player.weaponIndex);
+        healthBar.style.width = `${clamp(state.player.health, 0, 100)}%`;
+        shieldBar.style.width = `${clamp((state.player.armor / 35) * 100, 0, 100)}%`;
+      }
+
+      function createActor(className) {
+        const el = document.createElement("div");
+        el.className = `actor ${className}`;
+        return el;
+      }
+
+      function spawnEnemy() {
+        let x = state.centerX;
+        let y = state.centerY;
+
+        for (let attempt = 0; attempt < 50; attempt += 1) {
+          const candidateX = randomRange(24, state.arenaWidth - 24);
+          const candidateY = randomRange(24, state.arenaHeight - 24);
+          if (
+            !isBlocked(candidateX, candidateY, 16) &&
+            Math.hypot(candidateX - state.player.x, candidateY - state.player.y) > 180
+          ) {
+            x = candidateX;
+            y = candidateY;
+            break;
+          }
+        }
+
+        const enemy = {
+          x,
+          y,
+          radius: 16,
+          speed: randomRange(82, 128),
+          health: 72,
+          attackCooldown: 0,
+          el: createActor("enemy"),
+        };
+
+        enemy.el.style.left = `${x}px`;
+        enemy.el.style.top = `${y}px`;
+        enemyLayer.appendChild(enemy.el);
+        state.enemies.push(enemy);
+      }
+
+      function spawnLoot(x, y) {
+        const roll = Math.random();
+        const type = roll < 0.45 ? "medkit" : roll < 0.75 ? "armor" : "boost";
+        const item = {
+          x,
+          y,
+          radius: 12,
+          type,
+          pulse: Math.random() * Math.PI * 2,
+          el: createActor(`loot ${type}`),
+        };
+
+        item.el.style.left = `${x}px`;
+        item.el.style.top = `${y}px`;
+        lootLayer.appendChild(item.el);
+        state.loot.push(item);
+      }
+
+      function equipWeapon(index) {
+        if (!Number.isInteger(index) || index < 0 || index >= weaponCatalog.length || index === state.player.weaponIndex) {
           return;
         }
 
-        setStatus(
-          "Could not play this song. Check that the file is in your website folder."
-        );
+        const previousWeapon = getCurrentWeapon();
+        previousWeapon.ammo = state.player.ammo;
+        previousWeapon.reserveAmmo = state.player.reserveAmmo;
+
+        state.player.weaponIndex = index;
+        const weapon = getCurrentWeapon();
+        state.player.ammo = weapon.ammo;
+        state.player.reserveAmmo = weapon.reserveAmmo;
+        state.player.fireCooldown = 0;
+        state.player.reloadTimer = 0;
+        setMessage(`${weapon.name} equipped`, 1.1);
+        updateHud();
       }
 
-      updateControls();
-    }
-
-    function playSong(id) {
-      const song = songs.find((item) => item.id === id);
-      if (!song) return;
-
-      currentId = id;
-      if (audio.src !== song.src) {
-        audio.src = song.src;
+      function switchWeapon(direction = 1) {
+        const nextIndex = (state.player.weaponIndex + direction + weaponCatalog.length) % weaponCatalog.length;
+        equipWeapon(nextIndex);
       }
 
-      $("nowTitle").textContent = song.title;
-      $("nowArtist").textContent = song.artist || "Unknown artist";
-      $("currentTime").textContent = "0:00";
-      $("duration").textContent = "0:00";
+      function reloadWeapon() {
+        const weapon = getCurrentWeapon();
+        if (state.player.reloadTimer > 0 || state.player.ammo >= weapon.magSize || state.player.reserveAmmo <= 0) {
+          return;
+        }
 
-      seek.value = 0;
-      seek.disabled = true;
-
-      setStatus("");
-      renderLibrary();
-      startPlayback();
-    }
-
-    function togglePlayback() {
-      if (songs.length === 0) return;
-
-      if (currentId === null) {
-        playSong(songs[0].id);
-      } else if (audio.paused) {
-        startPlayback();
-      } else {
-        audio.pause();
-      }
-    }
-
-    function skip(direction) {
-      if (songs.length === 0) return;
-
-      const currentIndex = getCurrentIndex();
-      if (currentIndex < 0) {
-        playSong(songs[0].id);
-        return;
+        state.player.reloadTimer = weapon.reloadTime || 1.2;
+        setMessage(`Reloading ${weapon.name}...`, 1.1);
       }
 
-      const nextIndex =
-        (currentIndex + direction + songs.length) % songs.length;
+      function toggleVehicle() {
+        if (!state.running) return;
 
-      playSong(songs[nextIndex].id);
-    }
+        if (state.player.vehicle) {
+          const vehicle = state.player.vehicle;
+          const exitOffsets = [Math.PI / 2, -Math.PI / 2, Math.PI];
+          for (const offset of exitOffsets) {
+            const angle = vehicle.angle + offset;
+            const x = clamp(vehicle.x + Math.cos(angle) * 42, state.player.radius, state.arenaWidth - state.player.radius);
+            const y = clamp(vehicle.y + Math.sin(angle) * 42, state.player.radius, state.arenaHeight - state.player.radius);
+            if (!isBlocked(x, y, state.player.radius, vehicle)) {
+              state.player.x = x;
+              state.player.y = y;
+              state.player.vehicle = null;
+              state.player.el.classList.remove("riding");
+              setMessage("Exited vehicle", 1);
+              return;
+            }
+          }
+          setMessage("No room to exit here", 1);
+          return;
+        }
 
-    function resetPlayer() {
-      currentId = null;
-      audio.pause();
-      audio.removeAttribute("src");
-      audio.load();
+        let nearestVehicle = null;
+        let nearestDistance = 64;
+        for (const vehicle of state.vehicles) {
+          const distance = Math.hypot(vehicle.x - state.player.x, vehicle.y - state.player.y);
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestVehicle = vehicle;
+          }
+        }
 
-      $("nowTitle").textContent = "Choose a song";
-      $("nowArtist").textContent = "Your music, your space";
-      $("currentTime").textContent = "0:00";
-      $("duration").textContent = "0:00";
+        if (!nearestVehicle) {
+          setMessage("Move closer to a vehicle", 1);
+          return;
+        }
 
-      seek.value = 0;
-      seek.disabled = true;
-
-      updateControls();
-    }
-
-    function removeSong(id) {
-      const index = songs.findIndex((song) => song.id === id);
-      if (index < 0) return;
-
-      const song = songs[index];
-      if (id === currentId) {
-        resetPlayer();
+        state.player.vehicle = nearestVehicle;
+        state.player.x = nearestVehicle.x;
+        state.player.y = nearestVehicle.y;
+        state.player.el.classList.add("riding");
+        setMessage("Vehicle ready — WASD to drive, F to exit", 1.5);
       }
 
-      if (song.local) {
-        URL.revokeObjectURL(song.src);
+      function updateVehicle(dt) {
+        const vehicle = state.player.vehicle;
+        if (!vehicle) return;
+
+        const steering = (state.keys.d ? 1 : 0) - (state.keys.a ? 1 : 0);
+        const throttle = (state.keys.w ? 1 : 0) - (state.keys.s ? 1 : 0);
+        vehicle.angle += steering * 2.2 * dt * (throttle < 0 ? -1 : 1);
+
+        if (throttle !== 0) {
+          const driveSpeed = throttle > 0 ? vehicle.speed : vehicle.speed * 0.55;
+          moveEntity(
+            vehicle,
+            Math.cos(vehicle.angle) * driveSpeed * throttle * dt,
+            Math.sin(vehicle.angle) * driveSpeed * throttle * dt,
+            vehicle
+          );
+        }
+
+        state.player.x = vehicle.x;
+        state.player.y = vehicle.y;
+        renderVehicle(vehicle);
       }
 
-      songs.splice(index, 1);
-      renderLibrary();
+      function openNearbyChest() {
+        if (!state.running) return;
 
-      setStatus(`Removed "${song.title}" from your library.`);
-    }
+        let nearestChest = null;
+        let nearestDistance = 52;
 
-    function addFiles(fileList) {
-      const files = Array.from(fileList);
-      let added = 0;
+        for (const chest of state.chests) {
+          if (chest.opened) continue;
+          const distance = Math.hypot(chest.x - state.player.x, chest.y - state.player.y);
+          if (distance < nearestDistance) {
+            nearestChest = chest;
+            nearestDistance = distance;
+          }
+        }
 
-      for (const file of files) {
-        const looksLikeMedia =
-          file.type.startsWith("audio/") ||
-          file.type.startsWith("video/") ||
-          /\.(mp3|wav|ogg|m4a|aac|flac|opus|aiff|webm|mp4)$/i.test(file.name);
+        if (!nearestChest) {
+          setMessage("No unopened chest nearby", 1);
+          return;
+        }
 
-        if (!looksLikeMedia) continue;
+        nearestChest.opened = true;
+        nearestChest.el.classList.add("opened");
+        nearestChest.el.setAttribute("aria-label", `Loot chest ${nearestChest.index + 1}, opened`);
 
-        const name = file.name.replace(/\.[^.]+$/, "");
-        const separator = name.indexOf(" - ");
+        const weaponIndex = Math.floor(Math.random() * weaponCatalog.length);
+        const foundWeapon = weaponCatalog[weaponIndex];
+        equipWeapon(weaponIndex);
 
-        const artist = separator > 0
-          ? name.slice(0, separator).trim()
-          : "Local audio";
+        const gearIndex = Math.floor(Math.random() * 4);
+        let gearName = "";
+        if (gearIndex === 0) {
+          state.player.health = clamp(state.player.health + 30, 0, 100);
+          gearName = "Medkit";
+        } else if (gearIndex === 1) {
+          state.player.armor = clamp(state.player.armor + 20, 0, 35);
+          gearName = "Shield";
+        } else if (gearIndex === 2) {
+          state.player.grenades = Math.min(state.player.grenades + 1, 6);
+          gearName = "Grenade";
+        } else {
+          const currentWeapon = getCurrentWeapon();
+          const ammoRefill = Math.max(12, Math.round(currentWeapon.magSize * 1.5));
+          state.player.reserveAmmo = Math.min(
+            currentWeapon.maxReserveAmmo,
+            state.player.reserveAmmo + ammoRefill
+          );
+          currentWeapon.reserveAmmo = state.player.reserveAmmo;
+          gearName = "Ammo";
+        }
 
-        const title = separator > 0
-          ? name.slice(separator + 3).trim()
-          : name;
+        setMessage(`Chest opened: ${foundWeapon.name} + ${gearName}`, 2.2);
+        updateHud();
+      }
 
-        songs.push({
-          id: `local-${nextId++}`,
-          title: title || file.name,
-          artist,
-          src: URL.createObjectURL(file),
-          local: true
+      function jumpPlayer() {
+        if (!state.running || state.player.vehicle || state.player.jumpTimer > 0) return;
+
+        state.player.jumpTimer = 0.3;
+        const jumpX = Math.cos(state.player.facing) * 22;
+        const jumpY = Math.sin(state.player.facing) * 22;
+        moveEntity(state.player, jumpX, jumpY);
+        setMessage("Jump", 0.6);
+      }
+
+      function throwGrenade() {
+        if (!state.running || state.player.grenades <= 0) return;
+
+        state.player.grenades -= 1;
+        for (const enemy of state.enemies) {
+          const dist = Math.hypot(enemy.x - state.player.x, enemy.y - state.player.y);
+          if (dist <= 110) {
+            applyDamage(enemy, 60);
+          }
+        }
+
+        setMessage(`Grenade thrown (${state.player.grenades} left)`, 1.2);
+      }
+
+      function shoot() {
+        if (!state.running) return;
+        const weapon = getCurrentWeapon();
+        if (state.player.reloadTimer > 0) {
+          setMessage(`Reloading ${weapon.name}...`, 0.7);
+          return;
+        }
+        if (state.player.ammo <= 0) {
+          reloadWeapon();
+          return;
+        }
+        if (state.player.fireCooldown > 0) return;
+
+        const baseAngle = state.player.facing;
+        const spread = weapon.bulletsPerShot > 1 ? 0.22 : 0;
+
+        for (let shot = 0; shot < weapon.bulletsPerShot; shot += 1) {
+          const angle = baseAngle + (weapon.bulletsPerShot > 1 ? (shot - (weapon.bulletsPerShot - 1) / 2) * spread : 0);
+          const bullet = {
+            x: state.player.x + Math.cos(angle) * 22,
+            y: state.player.y + Math.sin(angle) * 22,
+            vx: Math.cos(angle) * weapon.bulletSpeed,
+            vy: Math.sin(angle) * weapon.bulletSpeed,
+            radius: weapon.bulletsPerShot > 1 ? 5 : 4,
+            life: weapon.bulletsPerShot > 1 ? 0.9 : 1.1,
+            damage: weapon.damage,
+            el: document.createElement("span"),
+          };
+
+          bullet.el.className = "bullet";
+          bullet.el.style.background = `linear-gradient(135deg, ${weapon.color}, #ffffff)`;
+          bullet.el.style.left = `${bullet.x}px`;
+          bullet.el.style.top = `${bullet.y}px`;
+          projectileLayer.appendChild(bullet.el);
+          state.bullets.push(bullet);
+        }
+
+        state.player.fireCooldown = weapon.fireCooldown;
+        state.player.ammo -= 1;
+
+        if (state.player.ammo === 0) {
+          reloadWeapon();
+        }
+      }
+
+      function applyDamage(target, amount) {
+        if (target === state.player) {
+          if (target.armor > 0) {
+            const absorbed = Math.min(target.armor, amount * 0.7);
+            target.armor -= absorbed;
+            amount -= absorbed;
+          }
+          target.health -= amount;
+        } else {
+          target.health -= amount;
+        }
+      }
+
+      function collectLoot(item) {
+        if (item.type === "medkit") {
+          state.player.health = clamp(state.player.health + 24, 0, 100);
+          setMessage("Medkit secured", 1.5);
+        } else if (item.type === "armor") {
+          state.player.armor = clamp(state.player.armor + 20, 0, 35);
+          setMessage("Armor boosted", 1.5);
+        } else {
+          state.player.health = clamp(state.player.health + 8, 0, 100);
+          state.player.fireCooldown = Math.max(0, state.player.fireCooldown - 0.05);
+          setMessage("Boost taken", 1.5);
+        }
+      }
+
+      function endGame(won) {
+        state.running = false;
+        messageBanner.textContent = won ? "Winner winner!" : "You were eliminated";
+        messageBanner.classList.add("flash");
+        setTimeout(() => messageBanner.classList.remove("flash"), 400);
+      }
+
+      function updatePlayer(dt) {
+        const horizontal = (state.keys.d ? 1 : 0) - (state.keys.a ? 1 : 0);
+        const vertical = (state.keys.s ? 1 : 0) - (state.keys.w ? 1 : 0);
+
+        const length = Math.hypot(horizontal, vertical) || 1;
+        const moveBoost = state.player.jumpTimer > 0 ? 1.8 : 1;
+        const moveX = (horizontal / length) * state.player.speed * moveBoost * dt;
+        const moveY = (vertical / length) * state.player.speed * moveBoost * dt;
+
+        if (state.player.vehicle) {
+          updateVehicle(dt);
+        } else {
+          moveEntity(state.player, moveX, moveY);
+        }
+
+        if (state.player.jumpTimer > 0) {
+          state.player.jumpTimer -= dt;
+        }
+
+        if (state.player.reloadTimer > 0) {
+          state.player.reloadTimer -= dt;
+          if (state.player.reloadTimer <= 0) {
+            const weapon = getCurrentWeapon();
+            const missing = weapon.magSize - state.player.ammo;
+            const refill = Math.min(missing, state.player.reserveAmmo);
+            state.player.ammo += refill;
+            state.player.reserveAmmo -= refill;
+            weapon.ammo = state.player.ammo;
+            weapon.reserveAmmo = state.player.reserveAmmo;
+            setMessage("Reload complete", 0.9);
+          }
+        }
+
+        if (state.player.aimAssist > 0) {
+          state.player.aimAssist = Math.max(0, state.player.aimAssist - dt);
+        }
+
+        const dx = state.mouse.x - state.player.x;
+        const dy = state.mouse.y - state.player.y;
+        state.player.facing = Math.atan2(dy, dx);
+
+        state.player.el.style.left = `${state.player.x}px`;
+        state.player.el.style.top = `${state.player.y}px`;
+        state.player.el.style.transform = `translate(-50%, -50%) rotate(${state.player.facing}rad)`;
+        playerNameTag.style.left = `${state.player.x}px`;
+        playerNameTag.style.top = `${state.player.y + 24}px`;
+
+        if (state.player.fireCooldown > 0) {
+          state.player.fireCooldown -= dt;
+        }
+
+        if (state.mouse.down) {
+          shoot();
+        }
+      }
+
+      function updateBullets(dt) {
+        for (let index = state.bullets.length - 1; index >= 0; index -= 1) {
+          const bullet = state.bullets[index];
+          bullet.x += bullet.vx * dt;
+          bullet.y += bullet.vy * dt;
+          bullet.life -= dt;
+
+          if (
+            bullet.x < -20 ||
+            bullet.x > state.arenaWidth + 20 ||
+            bullet.y < -20 ||
+            bullet.y > state.arenaHeight + 20 ||
+            bullet.life <= 0 ||
+            isBlocked(bullet.x, bullet.y, bullet.radius, state.player.vehicle)
+          ) {
+            bullet.el.remove();
+            state.bullets.splice(index, 1);
+            continue;
+          }
+
+          bullet.el.style.left = `${bullet.x}px`;
+          bullet.el.style.top = `${bullet.y}px`;
+
+          for (let enemyIndex = state.enemies.length - 1; enemyIndex >= 0; enemyIndex -= 1) {
+            const enemy = state.enemies[enemyIndex];
+            const dx = enemy.x - bullet.x;
+            const dy = enemy.y - bullet.y;
+            const dist = Math.hypot(dx, dy);
+
+            if (dist <= enemy.radius + bullet.radius) {
+              applyDamage(enemy, bullet.damage);
+              bullet.el.remove();
+              state.bullets.splice(index, 1);
+
+              if (enemy.health <= 0) {
+                enemy.el.remove();
+                state.enemies.splice(enemyIndex, 1);
+                state.kills += 1;
+                if (Math.random() < 0.6) {
+                  spawnLoot(enemy.x, enemy.y);
+                }
+                setMessage("Enemy down", 1.1);
+              }
+
+              break;
+            }
+          }
+        }
+      }
+
+      function updateEnemies(dt) {
+        for (let index = state.enemies.length - 1; index >= 0; index -= 1) {
+          const enemy = state.enemies[index];
+          const dx = state.player.x - enemy.x;
+          const dy = state.player.y - enemy.y;
+          const distance = Math.hypot(dx, dy) || 1;
+          const directionX = dx / distance;
+          const directionY = dy / distance;
+
+          moveEntity(
+            enemy,
+            directionX * enemy.speed * dt,
+            directionY * enemy.speed * dt
+          );
+
+          if (distance < enemy.radius + state.player.radius + 6) {
+            enemy.attackCooldown -= dt;
+            if (enemy.attackCooldown <= 0) {
+              applyDamage(state.player, 14);
+              enemy.attackCooldown = 0.7;
+            }
+          }
+
+          const stormDistance = Math.hypot(enemy.x - state.centerX, enemy.y - state.centerY);
+          if (stormDistance > state.zoneRadius) {
+            enemy.health -= 12 * dt;
+          }
+
+          if (enemy.health <= 0) {
+            enemy.el.remove();
+            state.enemies.splice(index, 1);
+            state.kills += 1;
+            if (Math.random() < 0.6) {
+              spawnLoot(enemy.x, enemy.y);
+            }
+            setMessage("Enemy down", 1.1);
+            continue;
+          }
+
+          enemy.el.style.left = `${enemy.x}px`;
+          enemy.el.style.top = `${enemy.y}px`;
+        }
+      }
+
+      function updateLoot(dt) {
+        for (let index = state.loot.length - 1; index >= 0; index -= 1) {
+          const item = state.loot[index];
+          item.pulse += dt * 4;
+          const dx = state.player.x - item.x;
+          const dy = state.player.y - item.y;
+          const dist = Math.hypot(dx, dy);
+
+          if (dist <= state.player.radius + item.radius + 4) {
+            collectLoot(item);
+            item.el.remove();
+            state.loot.splice(index, 1);
+            continue;
+          }
+
+          const bob = Math.sin(item.pulse) * 4;
+          item.el.style.left = `${item.x}px`;
+          item.el.style.top = `${item.y + bob}px`;
+        }
+      }
+
+      function updateStorm(dt) {
+        state.zoneRadius = Math.max(state.minZoneRadius, state.zoneRadius - state.shrinkRate * dt);
+        storm.style.width = `${state.zoneRadius * 2}px`;
+        storm.style.height = `${state.zoneRadius * 2}px`;
+        storm.style.left = `${state.centerX}px`;
+        storm.style.top = `${state.centerY}px`;
+
+        const playerDistance = Math.hypot(state.player.x - state.centerX, state.player.y - state.centerY);
+        if (playerDistance > state.zoneRadius) {
+          state.player.health -= 12 * dt;
+        }
+
+        for (const enemy of state.enemies) {
+          const enemyDistance = Math.hypot(enemy.x - state.centerX, enemy.y - state.centerY);
+          if (enemyDistance > state.zoneRadius) {
+            enemy.health -= 8 * dt;
+          }
+        }
+      }
+
+      function step(timestamp) {
+        if (!state.running) {
+          return;
+        }
+
+        const dt = Math.min((timestamp - state.lastTime) / 1000 || 0.016, 0.032);
+        state.time += dt;
+        state.lastTime = timestamp;
+
+        updateStorm(dt);
+        updatePlayer(dt);
+        updateBullets(dt);
+        updateEnemies(dt);
+        updateLoot(dt);
+
+        if (state.player.health <= 0) {
+          endGame(false);
+        }
+
+        if (state.enemies.length === 0 && state.running) {
+          endGame(true);
+        }
+
+        const bannerTimer = Number(messageBanner.dataset.timer || "0");
+        if (bannerTimer > 0) {
+          messageBanner.dataset.timer = String(Math.max(0, bannerTimer - dt));
+        }
+
+        updateHud();
+        renderMinimap();
+        requestAnimationFrame(step);
+      }
+
+      function resetMatch() {
+        state.running = true;
+        state.time = 0;
+        state.lastTime = 0;
+        state.kills = 0;
+        state.zoneRadius = state.startZoneRadius;
+        state.player.x = state.centerX;
+        state.player.y = state.centerY;
+        state.player.health = 100;
+        state.player.armor = 35;
+        state.player.fireCooldown = 0;
+        state.player.weaponIndex = 0;
+        for (const weapon of weaponCatalog) {
+          weapon.ammo = weapon.magSize;
+          weapon.reserveAmmo = weapon.maxReserveAmmo;
+        }
+        state.player.ammo = weaponCatalog[0].ammo;
+        state.player.reserveAmmo = weaponCatalog[0].reserveAmmo;
+        state.player.reloadTimer = 0;
+        state.player.grenades = 3;
+        state.player.jumpTimer = 0;
+        state.player.aimAssist = 0;
+        state.player.vehicle = null;
+        state.player.el.classList.remove("riding");
+        state.mouse.down = false;
+        for (const vehicle of state.vehicles) {
+          vehicle.x = vehicle.startX;
+          vehicle.y = vehicle.startY;
+          vehicle.angle = vehicle.startAngle;
+          renderVehicle(vehicle);
+        }
+        for (const chest of state.chests) {
+          chest.opened = false;
+          chest.el.classList.remove("opened");
+          chest.el.setAttribute(
+            "aria-label",
+            `Loot chest ${chest.index + 1}, press Enter nearby to open`
+          );
+        }
+        state.bullets.forEach((bullet) => bullet.el.remove());
+        state.bullets = [];
+        state.loot.forEach((item) => item.el.remove());
+        state.loot = [];
+        state.enemies.forEach((enemy) => enemy.el.remove());
+        state.enemies = [];
+        enemyLayer.innerHTML = "";
+        projectileLayer.innerHTML = "";
+        lootLayer.innerHTML = "";
+        messageBanner.classList.remove("flash");
+
+        for (let i = 0; i < 12; i += 1) {
+          spawnEnemy();
+        }
+
+        setMessage("Drop in", 1.6);
+        updateHud();
+      }
+
+      function setupInput() {
+        avatarNameInput.addEventListener("input", applyAvatarSettings);
+        avatarColorInput.addEventListener("input", applyAvatarSettings);
+        avatarStyleSelect.addEventListener("change", applyAvatarSettings);
+
+        window.addEventListener("keydown", (event) => {
+          const key = event.key.toLowerCase();
+          state.keys[key] = true;
+          state.keys[event.key] = true;
+
+          if (event.key === " ") {
+            event.preventDefault();
+            jumpPlayer();
+          }
+
+          if (key === "r") {
+            reloadWeapon();
+          }
+
+          if (key === "g") {
+            throwGrenade();
+          }
+
+          if (key === "f" && !event.repeat) {
+            toggleVehicle();
+          }
+
+          if (
+            event.key === "Enter" &&
+            !event.repeat &&
+            event.target !== avatarNameInput &&
+            event.target !== avatarColorInput &&
+            event.target !== avatarStyleSelect &&
+            event.target !== weaponSelectEl
+          ) {
+            event.preventDefault();
+            openNearbyChest();
+          }
+
+          if (key === "q") {
+            switchWeapon(-1);
+          }
+
+          if (key === "e") {
+            switchWeapon(1);
+          }
         });
 
-        added++;
+        window.addEventListener("keyup", (event) => {
+          const key = event.key.toLowerCase();
+          state.keys[key] = false;
+          state.keys[event.key] = false;
+        });
+
+        arena.addEventListener("mousemove", (event) => {
+          const rect = arena.getBoundingClientRect();
+          const x = ((event.clientX - rect.left) / rect.width) * state.arenaWidth;
+          const y = ((event.clientY - rect.top) / rect.height) * state.arenaHeight;
+          state.mouse.x = clamp(x, 0, state.arenaWidth);
+          state.mouse.y = clamp(y, 0, state.arenaHeight);
+        });
+
+        arena.addEventListener("mousedown", () => {
+          state.mouse.down = true;
+        });
+
+        arena.addEventListener("dblclick", () => {
+          state.player.aimAssist = 1.2;
+          setMessage("Aim locked", 0.8);
+        });
+
+        window.addEventListener("mouseup", () => {
+          state.mouse.down = false;
+        });
       }
 
-      renderLibrary();
-
-      const skipped = files.length - added;
-      setStatus(
-        `${added} song${added === 1 ? "" : "s"} added.` +
-        (skipped ? ` ${skipped} non-audio file${skipped === 1 ? "" : "s"} skipped.` : "")
-      );
-    }
-
-    // File selection
-    $("addSongs").addEventListener("click", () => fileInput.click());
-
-    fileInput.addEventListener("change", () => {
-      addFiles(fileInput.files);
-      fileInput.value = "";
-    });
-
-    dropZone.addEventListener("click", () => fileInput.click());
-
-    dropZone.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        fileInput.click();
-      }
-    });
-
-    // Drag and drop
-    dropZone.addEventListener("dragenter", (event) => {
-      event.preventDefault();
-      dragDepth++;
-      dropZone.classList.add("dragging");
-    });
-
-    dropZone.addEventListener("dragover", (event) => {
-      event.preventDefault();
-    });
-
-    dropZone.addEventListener("dragleave", () => {
-      dragDepth = Math.max(0, dragDepth - 1);
-      if (dragDepth === 0) {
-        dropZone.classList.remove("dragging");
-      }
-    });
-
-    dropZone.addEventListener("drop", (event) => {
-      event.preventDefault();
-      dragDepth = 0;
-      dropZone.classList.remove("dragging");
-      addFiles(event.dataTransfer.files);
-    });
-
-    // Search and controls
-    search.addEventListener("input", renderLibrary);
-    $("playPause").addEventListener("click", togglePlayback);
-    $("previous").addEventListener("click", () => skip(-1));
-    $("next").addEventListener("click", () => skip(1));
-
-    // Loop button: toggles Off -> Loop All -> Loop One -> Off
-    loopBtn.addEventListener("click", () => {
-      if (loopMode === "off") {
-        loopMode = "all";
-      } else if (loopMode === "all") {
-        loopMode = "one";
-      } else {
-        loopMode = "off";
-      }
-      updateLoopUI();
-    });
-
-    // Volume and seeking
-    $("volume").addEventListener("input", (event) => {
-      audio.volume = Number(event.target.value);
-    });
-
-    seek.addEventListener("input", () => {
-      if (Number.isFinite(audio.duration) && audio.duration > 0) {
-        audio.currentTime = (Number(seek.value) / 100) * audio.duration;
-      }
-    });
-
-    function updateDuration() {
-      $("duration").textContent = formatTime(audio.duration);
-      seek.disabled = !Number.isFinite(audio.duration) || audio.duration <= 0;
-    }
-
-    audio.addEventListener("loadedmetadata", updateDuration);
-    audio.addEventListener("durationchange", updateDuration);
-
-    audio.addEventListener("timeupdate", () => {
-      $("currentTime").textContent = formatTime(audio.currentTime);
-      seek.value =
-        Number.isFinite(audio.duration) && audio.duration > 0
-          ? (audio.currentTime / audio.duration) * 100
-          : 0;
-    });
-
-    audio.addEventListener("play", updateControls);
-    audio.addEventListener("pause", updateControls);
-
-    // Track finish behavior with loop logic
-    audio.addEventListener("ended", () => {
-      if (loopMode === "one") {
-        audio.currentTime = 0;
-        startPlayback();
-        return;
+      function initialize() {
+        setupInput();
+        state.player.el = document.getElementById("player");
+        applyAvatarSettings();
+        buildMap();
+        resetMatch();
+        requestAnimationFrame(step);
       }
 
-      const index = getCurrentIndex();
-      if (index >= 0 && index < songs.length - 1) {
-        playSong(songs[index + 1].id);
-      } else if (loopMode === "all" && songs.length > 0) {
-        playSong(songs[0].id);
-      } else {
-        updateControls();
-      }
-    });
-
-    audio.addEventListener("error", () => {
-      if (currentId !== null) {
-        setStatus(
-          "This track could not be loaded. Please ensure the file is in your website folder."
-        );
-      }
-      updateControls();
-    });
-
-    updateLoopUI();
-    renderLibrary();
-  </script>
-</body>
+      restartButton.addEventListener("click", resetMatch);
+      weaponSelectEl.addEventListener("change", () => {
+        equipWeapon(Number(weaponSelectEl.value));
+      });
+      initialize();
+    </script>
+    <script type="module" src="game.js"></script>
+  </body>
 </html>
