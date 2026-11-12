@@ -36,6 +36,25 @@
         <section class="arena-panel">
           <div id="arena" class="arena" aria-label="Battle arena" role="application">
             <canvas id="gameCanvas" aria-label="3D battle arena. Click to play."></canvas>
+            <div id="crosshair" class="crosshair" aria-hidden="true">
+              <i class="crosshair-top"></i>
+              <i class="crosshair-bottom"></i>
+              <i class="crosshair-left"></i>
+              <i class="crosshair-right"></i>
+              <i class="crosshair-center"></i>
+            </div>
+            <div id="scopeOverlay" class="scope-overlay scope-assault" aria-hidden="true">
+              <div class="scope-glass">
+                <i class="scope-line scope-vertical"></i>
+                <i class="scope-line scope-horizontal"></i>
+                <i class="scope-dot"></i>
+                <i class="scope-mark scope-mark-top"></i>
+                <i class="scope-mark scope-mark-bottom"></i>
+                <i class="scope-mark scope-mark-left"></i>
+                <i class="scope-mark scope-mark-right"></i>
+                <span class="scope-label"></span>
+              </div>
+            </div>
             <div id="mapLayer" class="map-layer" aria-hidden="true"></div>
             <div id="vehicleLayer" class="vehicle-layer" aria-hidden="true"></div>
             <div id="chestLayer" class="chest-layer"></div>
@@ -107,6 +126,33 @@
             </label>
           </div>
 
+          <div class="card match-card">
+            <h2>Match setup</h2>
+            <label class="editor-field" for="botCount">
+              Bot count <output id="botCountValue" for="botCount">12</output>
+              <input id="botCount" class="editor-input" type="range" min="1" max="36" value="12" />
+            </label>
+            <label class="editor-field" for="matchMode">
+              Match mode
+              <select id="matchMode" class="editor-input">
+                <option value="battle">Battle royale · bots fight each other</option>
+                <option value="squad">Squad · players team up vs bots</option>
+              </select>
+            </label>
+            <button id="restartButton" class="restart-button" type="button">Start / Restart Match</button>
+          </div>
+
+          <div class="card multiplayer-card">
+            <h2>Online multiplayer</h2>
+            <button id="hostRoomButton" class="restart-button" type="button">Host a room</button>
+            <label class="editor-field" for="roomCode">
+              Room code
+              <input id="roomCode" class="editor-input" type="text" maxlength="24" placeholder="Enter a room code" autocomplete="off" />
+            </label>
+            <button id="joinRoomButton" class="restart-button secondary-button" type="button">Join room</button>
+            <p id="roomStatus" class="room-status" role="status" aria-live="polite">Single-player · choose bots and start a match.</p>
+          </div>
+
           <div class="card">
             <h2>Objectives</h2>
             <ul class="objective-list">
@@ -125,13 +171,12 @@
               <li>Jump: Space Bar</li>
               <li>Shoot: Click · Aim: Right-click</li>
               <li>Reload: R</li>
-              <li>Aim: Double Click</li>
+              <li>Run: Shift · Jump: Space</li>
               <li>Grenade: G</li>
               <li>Open chest: Enter nearby</li>
               <li>Switch weapon: Q / E or select above</li>
               <li>Enter / exit vehicle: F</li>
             </ul>
-            <button id="restartButton" class="restart-button" type="button">New Match</button>
           </div>
         </aside>
       </div>
@@ -1355,6 +1400,7 @@
       });
       initialize();
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script type="module" src="game.js"></script>
   </body>
 </html>
