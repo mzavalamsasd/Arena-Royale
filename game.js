@@ -112,16 +112,26 @@ const mapFeatures = [
   { x: 66, y: 396, width: 148, height: 88, type: "building", label: "OLD QUARRY" },
   { x: 680, y: 390, width: 144, height: 94, type: "building", label: "GREENHOUSE" },
   { x: 380, y: 76, width: 118, height: 64, type: "building", label: "LOOKOUT" },
+  { x: 270, y: 76, width: 82, height: 58, type: "building", label: "BARRACKS" },
+  { x: 558, y: 402, width: 88, height: 60, type: "building", label: "RANGER STATION" },
   { x: 300, y: 222, width: 72, height: 30, type: "container" },
   { x: 520, y: 310, width: 78, height: 30, type: "container" },
+  { x: 210, y: 190, width: 66, height: 30, type: "container" },
+  { x: 590, y: 276, width: 72, height: 30, type: "container" },
   { x: 294, y: 404, width: 62, height: 48, type: "rock" },
   { x: 544, y: 104, width: 58, height: 45, type: "rock" },
   { x: 236, y: 286, width: 42, height: 40, type: "rock" },
   { x: 638, y: 274, width: 48, height: 42, type: "rock" },
   { x: 390, y: 448, width: 48, height: 40, type: "rock" },
+  { x: 214, y: 324, width: 42, height: 36, type: "rock" },
+  { x: 490, y: 446, width: 46, height: 38, type: "rock" },
   { x: 486, y: 180, width: 36, height: 44, type: "tree" },
   { x: 148, y: 250, width: 36, height: 44, type: "tree" },
   { x: 756, y: 246, width: 36, height: 44, type: "tree" },
+  { x: 320, y: 192, width: 36, height: 44, type: "tree" },
+  { x: 626, y: 118, width: 36, height: 44, type: "tree" },
+  { x: 746, y: 326, width: 36, height: 44, type: "tree" },
+  { x: 484, y: 490, width: 36, height: 44, type: "tree" },
 ];
 const vehicleStarts = [
   { x: 450, y: 190, angle: -Math.PI / 2, color: "#bd594a" },
@@ -145,6 +155,7 @@ const enemyProjectiles = [];
 const playerProjectiles = [];
 const grenades = [];
 const tracers = [];
+const damagePopups = [];
 const remotePlayers = new Map();
 const network = {
   peer: null,
@@ -179,6 +190,8 @@ const state = {
   recoilYaw: 0,
   weaponKick: 0,
   muzzleFlashTimer: 0,
+  hitConfirmTimer: 0,
+  damageFlashTimer: 0,
   grenadeCount: 3,
   botCount: 12,
   matchMode: "battle",
@@ -614,17 +627,44 @@ function createPlayerNameSprite(text) {
   return sprite;
 }
 
-function makeGunModel(color) {
+function makeGunModel(color, weaponType) {
   const group = new THREE.Group();
+  const type = weaponType.toLowerCase();
+  const pistol = type.includes("pistol");
+  const shotgun = type.includes("shotgun");
+  const sniper = type.includes("sniper") || type.includes("marksman") || type.includes("battle rifle");
+  const machineGun = type.includes("machine gun");
+  const compact = type.includes("submachine");
+  const receiverLength = pistol ? 0.4 : shotgun ? 0.66 : 0.58;
+  const barrelLength = pistol ? 0.34 : sniper ? 0.78 : shotgun ? 0.62 : compact ? 0.45 : 0.58;
   const metal = standardMaterial("#303638", 0.42, { metalness: 0.55 });
   const polymer = standardMaterial(color || "#525952", 0.7);
-  addBox(group, 0.16, 0.18, 0.58, polymer, 0, 0, -0.08);
-  addBox(group, 0.12, 0.1, 0.48, metal, 0, 0.045, -0.47);
-  addBox(group, 0.055, 0.055, 0.62, metal, 0, 0.02, -0.98);
-  addBox(group, 0.12, 0.23, 0.14, polymer, 0, -0.17, 0.06);
-  addBox(group, 0.12, 0.07, 0.21, metal, 0, -0.07, -0.27);
+  addBox(group, 0.16, 0.18, receiverLength, polymer, 0, 0, -0.08);
+  addBox(group, 0.12, 0.1, barrelLength, metal, 0, 0.045, -0.34 - barrelLength / 2);
+  addBox(group, 0.055, 0.055, barrelLength + 0.14, metal, 0, 0.02, -0.46 - barrelLength);
+  addBox(group, 0.12, pistol ? 0.19 : 0.23, pistol ? 0.1 : 0.14, polymer, 0, -0.15, 0.06);
+  addBox(group, 0.12, 0.07, shotgun ? 0.3 : 0.21, metal, 0, -0.07, -0.27);
   addBox(group, 0.07, 0.18, 0.07, metal, 0, 0.16, -0.21);
-  addBox(group, 0.045, 0.11, 0.045, metal, 0, 0.2, -0.66);
+
+  if (!pistol) {
+    addBox(group, 0.12, 0.12, sniper ? 0.48 : 0.34, polymer, 0, -0.02, 0.32);
+  }
+  if (sniper) {
+    addMesh(
+      new THREE.CylinderGeometry(0.065, 0.065, 0.38, 12),
+      metal,
+      group,
+      new THREE.Vector3(0, 0.18, -0.3)
+    );
+    addBox(group, 0.1, 0.08, 0.12, metal, 0, 0.18, -0.3);
+  } else if (shotgun) {
+    addBox(group, 0.13, 0.11, 0.52, polymer, 0, -0.1, -0.52);
+  } else if (!pistol) {
+    addBox(group, 0.14, 0.1, 0.2, metal, 0, 0.16, -0.25);
+  }
+  if (machineGun) {
+    addBox(group, 0.2, 0.28, 0.18, polymer, 0, -0.25, -0.08);
+  }
   return group;
 }
 
@@ -634,7 +674,7 @@ function createPlayer() {
   player.body.position.copy(player.position);
   world.add(player.body);
 
-  player.weaponModel = makeGunModel("#424a42");
+  player.weaponModel = makeGunModel("#424a42", weaponCatalog[state.selectedWeapon].type);
   player.weaponModel.position.set(0.3, -0.26, -0.58);
   camera.add(player.weaponModel);
   muzzleFlash = new THREE.PointLight("#ffc981", 0, 3.2, 2);
@@ -809,7 +849,9 @@ function resolveRemoteShot(packet) {
       packet.weaponType || "Assault Rifle",
       packet.team || "remote",
       "remote",
-      packet.peerId
+      packet.peerId,
+      Number(packet.speed) || null,
+      Number(packet.gravity) || null
     );
   }
 }
@@ -1157,7 +1199,7 @@ function rebuildFirstPersonGun() {
     }
   });
   const color = weaponCatalog[state.selectedWeapon].color;
-  player.weaponModel = makeGunModel(color);
+  player.weaponModel = makeGunModel(color, weaponCatalog[state.selectedWeapon].type);
   camera.add(player.weaponModel);
 }
 
@@ -1178,6 +1220,237 @@ function reload() {
   }
 }
 
+function getWeaponBallistics(weapon) {
+  const type = weapon.type.toLowerCase();
+  const aimed = state.aiming;
+  const moving = keys.has("KeyW") || keys.has("KeyA") || keys.has("KeyS") || keys.has("KeyD");
+  let spread = 0.008;
+  let gravity = 2.4;
+  let recoil = 0.018;
+
+  if (type.includes("shotgun")) {
+    spread = 0.047;
+    gravity = 8.5;
+    recoil = 0.055;
+  } else if (type.includes("sniper")) {
+    spread = 0.0015;
+    gravity = 2.1;
+    recoil = 0.06;
+  } else if (type.includes("marksman") || type.includes("battle rifle")) {
+    spread = 0.0045;
+    gravity = 2.3;
+    recoil = 0.035;
+  } else if (type.includes("pistol")) {
+    spread = 0.009;
+    gravity = 4;
+    recoil = 0.024;
+  } else if (type.includes("submachine")) {
+    spread = 0.014;
+    gravity = 5.2;
+    recoil = 0.017;
+  } else if (type.includes("machine gun")) {
+    spread = 0.012;
+    gravity = 3.2;
+    recoil = 0.022;
+  } else if (type.includes("carbine")) {
+    spread = 0.007;
+    recoil = 0.02;
+  }
+
+  return {
+    spread: spread * (aimed ? 0.42 : 1) * (moving ? 1.75 : 1),
+    gravity,
+    recoil: recoil * (aimed ? 0.72 : 1),
+    speed: THREE.MathUtils.clamp((Number(weapon.bulletSpeed) || 550) / 10, 32, 90),
+    range: type.includes("sniper") ? 100 : type.includes("shotgun") ? 34 : 75,
+  };
+}
+
+function spawnProjectile(origin, direction, damage, weaponType, team, owner, shooterId = null, speed = null, gravity = null) {
+  const normalized = direction.clone().normalize();
+  const type = weaponType.toLowerCase();
+  const material = new THREE.MeshBasicMaterial({
+    color: type.includes("sniper") ? "#fff0bc" : type.includes("shotgun") ? "#ffb365" : "#ffd78a",
+  });
+  const mesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.012, 0.035, type.includes("sniper") ? 0.42 : 0.24, 6),
+    material
+  );
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normalized);
+  mesh.position.copy(origin).addScaledVector(normalized, 0.45);
+  world.add(mesh);
+
+  const spec = getWeaponBallistics({ type: weaponType, bulletSpeed: speed ? speed * 10 : 550 });
+  const projectileSpeed = speed || spec.speed;
+  playerProjectiles.push({
+    mesh,
+    velocity: normalized.multiplyScalar(projectileSpeed),
+    damage,
+    gravity: gravity ?? spec.gravity,
+    life: spec.range / projectileSpeed,
+    range: spec.range,
+    traveled: 0,
+    team,
+    owner,
+    shooterId,
+    weaponType,
+  });
+}
+
+function distanceToSegment(point, start, end) {
+  const segment = end.clone().sub(start);
+  const lengthSquared = segment.lengthSq();
+  if (lengthSquared === 0) return { distance: point.distanceTo(start), fraction: 0 };
+  const fraction = THREE.MathUtils.clamp(point.clone().sub(start).dot(segment) / lengthSquared, 0, 1);
+  return {
+    distance: point.distanceTo(start.clone().addScaledVector(segment, fraction)),
+    fraction,
+  };
+}
+
+function damageEnemy(enemy, amount, byPlayer) {
+  const absorbed = Math.min(enemy.armor, amount * 0.6);
+  enemy.armor -= absorbed;
+  enemy.health -= amount - absorbed;
+  if (byPlayer) {
+    addDamagePopup(enemy.position.clone().add(new THREE.Vector3(0, 2.45, 0)), amount);
+    state.hitConfirmTimer = 0.13;
+    arena.classList.add("hit-confirmed");
+  }
+  addDust(enemy.position.clone().add(new THREE.Vector3(0, 1.15, 0)), 4, "#bb514b");
+  if (enemy.health <= 0) eliminateEnemy(enemy, byPlayer);
+}
+
+function addDamagePopup(position, amount) {
+  const popupCanvas = document.createElement("canvas");
+  popupCanvas.width = 128;
+  popupCanvas.height = 64;
+  const context = popupCanvas.getContext("2d");
+  context.font = "900 38px system-ui, sans-serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.lineWidth = 6;
+  context.strokeStyle = "rgba(10, 15, 19, 0.85)";
+  context.strokeText(String(Math.round(amount)), 64, 34);
+  context.fillStyle = amount >= 40 ? "#ffd26d" : "#f2fff7";
+  context.fillText(String(Math.round(amount)), 64, 34);
+
+  const texture = new THREE.CanvasTexture(popupCanvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.position.copy(position);
+  sprite.scale.set(0.9, 0.45, 1);
+  sprite.renderOrder = 20;
+  world.add(sprite);
+  damagePopups.push({ sprite, life: 0.72, drift: (Math.random() - 0.5) * 0.45 });
+}
+
+function updateDamagePopups(dt) {
+  for (let index = damagePopups.length - 1; index >= 0; index -= 1) {
+    const popup = damagePopups[index];
+    popup.life -= dt;
+    popup.sprite.position.y += dt * 1.05;
+    popup.sprite.position.x += popup.drift * dt;
+    popup.sprite.material.opacity = Math.max(0, popup.life / 0.72);
+    if (popup.life <= 0) {
+      world.remove(popup.sprite);
+      popup.sprite.material.map.dispose();
+      popup.sprite.material.dispose();
+      damagePopups.splice(index, 1);
+    }
+  }
+}
+
+function removePlayerProjectile(index) {
+  const projectile = playerProjectiles[index];
+  world.remove(projectile.mesh);
+  projectile.mesh.geometry.dispose();
+  projectile.mesh.material.dispose();
+  playerProjectiles.splice(index, 1);
+}
+
+function updatePlayerProjectiles(dt) {
+  for (let index = playerProjectiles.length - 1; index >= 0; index -= 1) {
+    const projectile = playerProjectiles[index];
+    const start = projectile.mesh.position.clone();
+    projectile.velocity.y -= projectile.gravity * dt;
+    projectile.mesh.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      projectile.velocity.clone().normalize()
+    );
+    const displacement = projectile.velocity.clone().multiplyScalar(dt);
+    const end = start.clone().add(displacement);
+    const travel = displacement.length();
+    projectile.traveled += travel;
+    projectile.life -= dt;
+
+    let impact = null;
+    let hitTarget = null;
+    if (travel > 0) {
+      raycaster.set(start, displacement.normalize());
+      raycaster.far = travel + 0.08;
+      const candidates = [
+        ...blockerMeshes,
+        ...enemies.filter((enemy) => enemy.alive && enemy.team !== projectile.team).map((enemy) => enemy.body),
+        ...[...remotePlayers.values()].filter((remote) => remote.health > 0 && remote.team !== projectile.team).map((remote) => remote.body),
+      ];
+      const intersections = raycaster.intersectObjects(candidates, true);
+      if (intersections.length > 0) {
+        const nearest = intersections[0];
+        impact = nearest.point;
+        hitTarget =
+          enemies.find((enemy) => enemy.alive && enemy.team !== projectile.team && isDescendantOf(nearest.object, enemy.body)) ||
+          [...remotePlayers.values()].find((remote) => remote.team !== projectile.team && isDescendantOf(nearest.object, remote.body)) ||
+          null;
+      }
+
+      if (projectile.owner === "remote" && projectile.team !== localTeam()) {
+        const bodyCenter = player.position.clone().add(new THREE.Vector3(0, 1.08, 0));
+        const playerHit = distanceToSegment(bodyCenter, start, end);
+        const hitDistance = impact ? start.distanceTo(impact) : Infinity;
+        if (playerHit.distance < 0.46 && playerHit.fraction * travel <= hitDistance + 0.03) {
+          damagePlayer(projectile.damage);
+          removePlayerProjectile(index);
+          continue;
+        }
+      }
+
+      if (impact) {
+        if (hitTarget && hitTarget.body) {
+          if (enemies.includes(hitTarget)) {
+            damageEnemy(hitTarget, projectile.damage, projectile.owner === "player");
+          } else {
+            sendToPeer(hitTarget.id, { type: "hit", damage: projectile.damage });
+          }
+          addDust(impact, projectile.weaponType.toLowerCase().includes("shotgun") ? 4 : 7, "#cfaa78");
+        } else {
+          addDust(impact, 3, "#cfaa78");
+        }
+        removePlayerProjectile(index);
+        continue;
+      }
+    }
+
+    projectile.mesh.position.copy(end);
+    if (
+      projectile.life <= 0 ||
+      projectile.traveled >= projectile.range ||
+      end.y < terrainHeight(end.x, end.z) ||
+      Math.abs(end.x) > HALF_WIDTH ||
+      Math.abs(end.z) > HALF_DEPTH
+    ) {
+      if (end.y < terrainHeight(end.x, end.z)) addDust(end, 2, "#c5b88e");
+      removePlayerProjectile(index);
+    }
+  }
+}
+
 function fireWeapon() {
   if (!state.running || state.reloadTimer > 0 || state.shotCooldown > 0 || player.vehicle) return;
   if (state.ammo <= 0) {
@@ -1193,54 +1466,52 @@ function fireWeapon() {
   const origin = camera.position.clone();
   const direction = new THREE.Vector3();
   camera.getWorldDirection(direction);
-  const spreadFactor = weapon.type === "Shotgun" ? 0.024 : weapon.type.includes("Sniper") ? 0.001 : 0.006;
-  const hitTargets = new Set();
-  let tracerEnd = origin.clone().addScaledVector(direction, 75);
+  const ballistics = getWeaponBallistics(weapon);
+  const cameraRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+  const cameraUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+  const shotDirections = [];
 
   for (let shot = 0; shot < weapon.bulletsPerShot; shot += 1) {
     const shotDirection = direction.clone();
-    shotDirection.x += (Math.random() - 0.5) * spreadFactor;
-    shotDirection.y += (Math.random() - 0.5) * spreadFactor;
-    shotDirection.z += (Math.random() - 0.5) * spreadFactor;
+    shotDirection.addScaledVector(cameraRight, (Math.random() - 0.5) * ballistics.spread);
+    shotDirection.addScaledVector(cameraUp, (Math.random() - 0.5) * ballistics.spread);
     shotDirection.normalize();
-    raycaster.set(origin, shotDirection);
-    raycaster.far = 75;
-
-    const intersections = raycaster.intersectObjects([
-      ...blockerMeshes,
-      ...enemies.filter((enemy) => enemy.alive).map((enemy) => enemy.body),
-      ...[...remotePlayers.values()].map((remote) => remote.body),
-    ], true);
-    let impact = null;
-    if (intersections.length > 0) {
-      const nearest = intersections[0];
-      impact = nearest.point;
-      const hitEnemy = enemies.find((enemy) => enemy.alive && isDescendantOf(nearest.object, enemy.body));
-      if (hitEnemy) hitTargets.add(hitEnemy);
-      const hitRemote = [...remotePlayers.values()].find((remote) => isDescendantOf(nearest.object, remote.body));
-      if (hitRemote && hitRemote.team !== localTeam()) {
-        sendToPeer(hitRemote.id, { type: "hit", damage: weapon.damage });
-      }
-    }
-    if (shot === 0 && impact) tracerEnd = impact.clone();
-    if (weapon.bulletsPerShot > 1 && impact) addDust(impact, 3, "#dfc38b");
+    shotDirections.push(shotDirection.toArray());
+    spawnProjectile(
+      origin,
+      shotDirection,
+      weapon.damage,
+      weapon.type,
+      localTeam(),
+      "player",
+      network.peerId,
+      ballistics.speed,
+      ballistics.gravity
+    );
   }
 
-  for (const enemy of hitTargets) {
-    const damage = weapon.damage * (weapon.type === "Shotgun" ? 1 : 1);
-    enemy.health -= damage;
-    addDust(enemy.position.clone().add(new THREE.Vector3(0, 1.2, 0)), 6, "#bb514b");
-    if (enemy.health <= 0) eliminateEnemy(enemy, true);
-  }
+  state.recoilPitch = Math.min(0.22, state.recoilPitch + ballistics.recoil);
+  state.recoilYaw = THREE.MathUtils.clamp(
+    state.recoilYaw + (Math.random() - 0.5) * ballistics.recoil * 0.45,
+    -0.07,
+    0.07
+  );
+  state.weaponKick = Math.min(0.2, state.weaponKick + ballistics.recoil * 1.15);
+  state.muzzleFlashTimer = 0.045;
+  muzzleFlash.intensity = weapon.type.includes("Sniper") ? 4.5 : 2.4;
+  if (weapon.type.toLowerCase().includes("shotgun")) addDust(origin.clone().addScaledVector(direction, 1.2), 3, "#d5b17d");
 
   broadcastNetwork({
     type: "shot",
+    peerId: network.peerId,
     origin: origin.toArray(),
-    direction: direction.toArray(),
+    shots: shotDirections,
     damage: weapon.damage,
+    weaponType: weapon.type,
+    speed: ballistics.speed,
+    gravity: ballistics.gravity,
     team: localTeam(),
   });
-  addTracer(origin.clone().addScaledVector(direction, 0.65), tracerEnd, weapon.color);
   if (state.ammo === 0 && state.reserveAmmo > 0) reload();
   updateHUD();
 }
@@ -1416,6 +1687,8 @@ function updateCamera(dt) {
     const targetFov = state.aiming ? aimedFov : 76;
     camera.fov = THREE.MathUtils.damp(camera.fov, targetFov, 10, dt);
     camera.updateProjectionMatrix();
+    camera.rotation.set(state.pitch + state.recoilPitch, state.yaw + state.recoilYaw, 0);
+    player.weaponModel.position.z += state.weaponKick;
     if (state.reloadTimer > 0) {
       player.weaponModel.rotation.x = Math.sin(state.elapsed * 25) * 0.12;
     } else {
@@ -1503,6 +1776,8 @@ function updateEnemies(dt) {
       enemy.fireTimer = 1.1 + Math.random() * 1.2;
       const start = enemy.position.clone().add(new THREE.Vector3(0, 1.42, 0));
       const aimPoint = target.position.clone().add(new THREE.Vector3(0, target.kind === "player" && player.vehicle ? 1.1 : 1.2, 0));
+      aimPoint.x += (Math.random() - 0.5) * Math.min(1.3, distance * 0.025);
+      aimPoint.y += (Math.random() - 0.5) * 0.55;
       const velocity = aimPoint.sub(start).normalize().multiplyScalar(22);
       const projectile = addMesh(
         new THREE.SphereGeometry(0.075, 8, 8),
@@ -1520,6 +1795,8 @@ function damagePlayer(amount) {
   const absorbed = Math.min(player.armor, amount * 0.65);
   player.armor -= absorbed;
   player.health -= amount - absorbed;
+  state.damageFlashTimer = 0.22;
+  arena.classList.add("taking-damage");
   addDust(player.position.clone().add(new THREE.Vector3(0, 1, 0)), 4, "#bb514b");
   if (player.health <= 0) finishMatch(false);
   updateHUD();
@@ -1528,8 +1805,23 @@ function damagePlayer(amount) {
 function updateEnemyProjectiles(dt) {
   for (let index = enemyProjectiles.length - 1; index >= 0; index -= 1) {
     const projectile = enemyProjectiles[index];
+    const start = projectile.mesh.position.clone();
+    projectile.velocity.y -= 2.8 * dt;
     projectile.mesh.position.addScaledVector(projectile.velocity, dt);
     projectile.life -= dt;
+    const displacement = projectile.mesh.position.clone().sub(start);
+    const travel = displacement.length();
+    if (travel > 0) {
+      raycaster.set(start, displacement.normalize());
+      raycaster.far = travel;
+      const blockers = raycaster.intersectObjects(blockerMeshes, true);
+      if (blockers.length > 0) {
+        addDust(blockers[0].point, 3, "#c5b88e");
+        world.remove(projectile.mesh);
+        enemyProjectiles.splice(index, 1);
+        continue;
+      }
+    }
     const targetPosition = projectile.target.position.clone().add(new THREE.Vector3(
       0,
       projectile.target.kind === "player" && player.vehicle ? 1 : 1.15,
@@ -1771,6 +2063,24 @@ function renderMinimap() {
   const sy = height / MAP_DEPTH;
   const px = (x) => (x + HALF_WIDTH) * sx;
   const py = (z) => (z + HALF_DEPTH) * sy;
+  const drawPlayerMarker = (x, z, yaw, color, size) => {
+    const angle = Math.atan2(-Math.cos(yaw) * sy, -Math.sin(yaw) * sx);
+    context.save();
+    context.translate(px(x), py(z));
+    context.rotate(angle);
+    context.beginPath();
+    context.moveTo(0, -size);
+    context.lineTo(size * 0.72, size);
+    context.lineTo(0, size * 0.55);
+    context.lineTo(-size * 0.72, size);
+    context.closePath();
+    context.fillStyle = color;
+    context.fill();
+    context.strokeStyle = "rgba(5, 12, 14, .9)";
+    context.lineWidth = 1;
+    context.stroke();
+    context.restore();
+  };
 
   context.clearRect(0, 0, width, height);
   context.fillStyle = "#546c4d";
@@ -1805,19 +2115,18 @@ function renderMinimap() {
     context.arc(px(enemy.position.x), py(enemy.position.z), 2.2, 0, Math.PI * 2);
     context.fill();
   }
+  for (const remote of remotePlayers.values()) {
+    if (remote.health <= 0) continue;
+    const color = remote.team === localTeam() ? "#7ed8ff" : "#ff6378";
+    drawPlayerMarker(remote.position.x, remote.position.z, remote.body.rotation.y, color, 3.2);
+  }
 
   context.strokeStyle = "rgba(145, 255, 207, .9)";
   context.lineWidth = 1.4;
   context.beginPath();
   context.arc(px(0), py(0), state.zoneRadius * sx, 0, Math.PI * 2);
   context.stroke();
-  context.fillStyle = "#8cf8b7";
-  context.beginPath();
-  context.arc(px(player.position.x), py(player.position.z), 3.3, 0, Math.PI * 2);
-  context.fill();
-  context.strokeStyle = "#effff7";
-  context.lineWidth = 1;
-  context.stroke();
+  drawPlayerMarker(player.position.x, player.position.z, state.yaw, "#8cf8b7", 4.2);
 }
 
 function update(dt) {
@@ -1825,6 +2134,15 @@ function update(dt) {
   state.elapsed += dt;
   state.syncTimer -= dt;
   state.shotCooldown = Math.max(0, state.shotCooldown - dt);
+  state.recoilPitch = THREE.MathUtils.damp(state.recoilPitch, 0, 7.5, dt);
+  state.recoilYaw = THREE.MathUtils.damp(state.recoilYaw, 0, 8.5, dt);
+  state.weaponKick = THREE.MathUtils.damp(state.weaponKick, 0, 12, dt);
+  state.muzzleFlashTimer = Math.max(0, state.muzzleFlashTimer - dt);
+  if (muzzleFlash) muzzleFlash.intensity = state.muzzleFlashTimer > 0 ? muzzleFlash.intensity : 0;
+  state.hitConfirmTimer = Math.max(0, state.hitConfirmTimer - dt);
+  state.damageFlashTimer = Math.max(0, state.damageFlashTimer - dt);
+  if (state.hitConfirmTimer === 0) arena.classList.remove("hit-confirmed");
+  if (state.damageFlashTimer === 0) arena.classList.remove("taking-damage");
   if (state.reloadTimer > 0) {
     state.reloadTimer -= dt;
     if (state.reloadTimer <= 0) {
@@ -1841,10 +2159,12 @@ function update(dt) {
 
   updatePlayer(dt);
   updateCamera(dt);
+  updatePlayerProjectiles(dt);
   updateEnemies(dt);
   updateEnemyProjectiles(dt);
   updateGrenades(dt);
   updateLooseItems(dt);
+  updateDamagePopups(dt);
   updateStorm(dt);
 
   for (let index = tracers.length - 1; index >= 0; index -= 1) {
@@ -2005,6 +2325,13 @@ function resetMatch() {
   state.reserveAmmo = weaponCatalog[state.selectedWeapon].maxReserveAmmo;
   state.reloadTimer = 0;
   state.shotCooldown = 0;
+  state.recoilPitch = 0;
+  state.recoilYaw = 0;
+  state.weaponKick = 0;
+  state.muzzleFlashTimer = 0;
+  state.hitConfirmTimer = 0;
+  state.damageFlashTimer = 0;
+  if (muzzleFlash) muzzleFlash.intensity = 0;
   player.health = 100;
   player.armor = 35;
   player.position.copy(worldPoint(0, 0));
@@ -2013,12 +2340,14 @@ function resetMatch() {
   player.grounded = true;
   player.vehicle = null;
   arena.classList.remove("aiming", "third-person", "vehicle-view");
+  arena.classList.remove("hit-confirmed", "taking-damage");
   messageBanner.classList.remove("flash");
 
   for (const enemy of enemies) world.remove(enemy.body);
   enemies.length = 0;
   for (const projectile of enemyProjectiles) world.remove(projectile.mesh);
   enemyProjectiles.length = 0;
+  for (let i = playerProjectiles.length - 1; i >= 0; i -= 1) removePlayerProjectile(i);
   for (const grenade of grenades) world.remove(grenade.mesh);
   grenades.length = 0;
   for (const item of looseItems) {
@@ -2033,6 +2362,12 @@ function resetMatch() {
     tracer.line.material.dispose();
   }
   tracers.length = 0;
+  for (const popup of damagePopups) {
+    world.remove(popup.sprite);
+    popup.sprite.material.map.dispose();
+    popup.sprite.material.dispose();
+  }
+  damagePopups.length = 0;
 
   for (const chest of chests) {
     chest.opened = false;
